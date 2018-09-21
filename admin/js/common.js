@@ -871,8 +871,10 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				var nm = qTranslateConfig.custom_field_classes[i];
 				qtx.addContentHooksByClass(nm);
 			}
+			/* gutenberg
 			if (qTranslateConfig.LSB)
 				setTinyMceInit();
+			*/
 		};
 
 		/**
@@ -1092,7 +1094,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					//co('setTinyMceInit: id=', key);
 				}
 			};
-			setTinyMceInit();
+			// gutenberg setTinyMceInit();
 
 			/** Adds more TinyMCE editors, which may have been initialized dynamically. */
 			loadTinyMceHooks = function () {
@@ -1251,6 +1253,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		//co('displayHookNodes: ',displayHookNodes);
 		//co('displayHookAttrs.length=',displayHookAttrs.length);
 		//co('contentHooks: ',contentHooks);
+		/* gutenberg
 		if (!displayHookNodes.length && !displayHookAttrs.length) {
 			var ok = false;
 			for (var key in contentHooks) {
@@ -1261,6 +1264,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				return;
 			}
 		}
+		*/
 
 		this.onLoadLanguage = function (lang, langFrom) {
 			var onTabSwitchFunctionsLoad = qTranslateConfig.onTabSwitchFunctionsLoad;
@@ -1446,7 +1450,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		//co('qTranslateConfig.LSB=',qTranslateConfig.LSB);
 		if (qTranslateConfig.LSB) {
 			//additional initialization
-			this.addContentHooksTinyMCE();
+			// gutenberg this.addContentHooksTinyMCE();
 			setupMetaBoxLSB();
 
 			//create sets of LSB
