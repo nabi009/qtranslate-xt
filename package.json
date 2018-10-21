@@ -1,0 +1,27 @@
+{
+  "name": "qtranslate-xt",
+  "version": "1.0.0",
+  "description": "Developed by: new qTranslate community, from qTranslate-X by John Clause and qTranslate by Qian Qin   Contributors: herrvigg, johnclause, chineseleper, Vavooon, grafcom   Tags: multilingual, language, admin, tinymce, bilingual, widget, switcher, i18n, l10n, multilanguage, translation   Requires: 4.0   Tested up to: 4.9.7   Stable tag: N/A   License: GPLv3 or later   License URI: http://www.gnu.org/licenses/gpl-3.0.html",
+  "main": "index.js",
+  "scripts": {
+    "build": "babel admin/js/src -d admin/js/lib",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qtranslate/qtranslate-xt.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/qtranslate/qtranslate-xt/issues"
+  },
+  "homepage": "https://github.com/qtranslate/qtranslate-xt#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0"
+  },
+  "dependencies": {}
+}

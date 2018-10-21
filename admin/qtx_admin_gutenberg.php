@@ -31,8 +31,9 @@ function qtranxf_rest_prepare( $response, $post, $request ) {
 		return $response;
 	}
 
-	//$edit_lang = $request->get_param( 'qtx_lang' );
-	$edit_lang = $_GET[ 'qtx_lang' ];
+	// TODO allow user to select editor lang
+	$edit_lang = $request->get_param( 'qtx_lang' );
+	//$edit_lang = $_GET[ 'qtx_lang' ];
 	if ( ! isset( $edit_lang ) ) {
 		return $response;
 	}
@@ -129,7 +130,7 @@ function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) 
 add_filter( 'rest_request_before_callbacks', 'qtranxf_rest_request_before_callbacks', 99, 3 );
 
 function qtranxf_enqueue_block_editor_assets() {
-	$script_file = 'js/editor-gutenberg';
+	$script_file = 'js/lib/editor-gutenberg';
 	$script_file .= defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '.js' : '.min.js';
 	wp_register_script(
 		'qtx-gutenberg',
