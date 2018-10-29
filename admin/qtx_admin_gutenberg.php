@@ -11,8 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 // *//**
 // * Set up a custom REST API controller class for the Page post type.
 // *
-// * @author Kellen Mace
-// *
 // * @param  array  $args The post type arguments.
 // * @param  string $name The name of the post type.
 // *
@@ -32,22 +30,24 @@ function qtranxf_rest_prepare( $response, $post, $request ) {
 	}
 
 	// TODO allow user to select editor lang
-	$edit_lang = $request->get_param( 'qtx_lang' );
-	//$edit_lang = $_GET[ 'qtx_lang' ];
-	if ( ! isset( $edit_lang ) ) {
+  $editor_lang = 'fr';
+	// $editor_lang = $request->get_param( 'qtx_lang' );
+	//$editor_lang = $_GET[ 'qtx_lang' ];
+	if ( ! isset( $editor_lang ) ) {
 		return $response;
 	}
 
 	$response_data = $response->get_data();
 	if ( isset( $response_data['content'] ) && is_array( $response_data['content'] ) && isset( $response_data['content']['raw'] ) ) {
-		$response_data['title']['raw']   = qtranxf_use( $edit_lang, $response_data['title']['raw'] );
-		$response_data['content']['raw'] = qtranxf_use( $edit_lang, $response_data['content']['raw'] );
+		$response_data['title']['raw']   = qtranxf_use( $editor_lang, $response_data['title']['raw'] );
+		$response_data['content']['raw'] = qtranxf_use( $editor_lang, $response_data['content']['raw'] );
+    $response_data['qtx_editor_lang'] = $editor_lang;
 		$response->set_data( $response_data );
 	}
 
 	return $response;
 }
-
+// TODO generalize to selected post types in options
 $post_type = 'post';
 add_filter( "rest_prepare_{$post_type}", 'qtranxf_rest_prepare', 99, 3 );
 
@@ -63,14 +63,13 @@ function qtranxf_rest_post_dispatch( $response, $handler, $request ) {
 
 	$response_data = $response->get_data();
 	if ( isset( $response_data['content'] ) && is_array( $response_data['content'] ) && isset( $response_data['content']['raw'] ) ) {
-		$response_data['title']['raw']   = qtranxf_use( $edit_langang, $response_data['title']['raw'] );
+		$response_data['title']['raw']   = qtranxf_use( $edit_lang, $response_data['title']['raw'] );
 		$response_data['content']['raw'] = qtranxf_use( $edit_lang, $response_data['content']['raw'] );
 		$response->set_data( $response_data );
 	}
 
 	return $response;
 }
-
 add_filter( 'rest_post_dispatch', 'qtranxf_rest_post_dispatch', 99, 3 );
 
 function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) {
@@ -78,8 +77,8 @@ function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) 
 		return $response;
 	}
 
-	$edit_lang = $request->get_param( 'qtx_lang' );
-	if ( ! isset( $qtx_lang ) ) {
+	$editor_lang = $request->get_param( 'qtx_editor_lang' );
+	if ( ! isset( $editor_lang ) ) {
 		return $response;
 	}
 
@@ -106,7 +105,7 @@ function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) 
 				if( ! empty( $lang_text ) ) $result[$language] = $language;
 			}*/
 
-			$split[ $edit_lang ] = $new_value;
+			$split[ $editor_lang ] = $new_value;
 
 			//$sep = '[';
 			//$new_data = qtranxf_collect_translations_deep( $split, $sep );
@@ -117,8 +116,8 @@ function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) 
 			//$request_body[ $field ] =  $new_data;
 		}
 	}
-	//$response_data['title']['raw'] = qtranxf_use($lang, $response_data['title']['raw']);
-	//$response_data['content']['raw'] = qtranxf_use($lang, $response_data['content']['raw']);
+	//$response_data['title']['raw'] = qtranxf_use($editor_lang, $response_data['title']['raw']);
+	//$response_data['content']['raw'] = qtranxf_use($editor_lang, $response_data['content']['raw']);
 	//$response->set_data( $response_data );
 
 
@@ -126,7 +125,6 @@ function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) 
 
 	return $response;
 }
-
 add_filter( 'rest_request_before_callbacks', 'qtranxf_rest_request_before_callbacks', 99, 3 );
 
 function qtranxf_enqueue_block_editor_assets() {
@@ -141,14 +139,11 @@ function qtranxf_enqueue_block_editor_assets() {
 	);
 	wp_enqueue_script( 'qtx-gutenberg' );
 }
-
 add_action( 'enqueue_block_editor_assets', 'qtranxf_enqueue_block_editor_assets' );
 
-function qtranxf_enqueue_editor() {
-
-}
-
-add_action( 'wp_enqueue_editor', 'qtranxf_enqueue_editor' );
+//function qtranxf_enqueue_editor() {
+//}
+//add_action( 'wp_enqueue_editor', 'qtranxf_enqueue_editor' );
 
 
 //if ( file_exists(QTRANSLATE_DIR.'/dev/slugs' ) )

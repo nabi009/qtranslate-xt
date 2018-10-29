@@ -9,14 +9,19 @@
 
     wp.apiFetch.use((options, next) => {
         if (options.path) {
-            const post_id = wp.data.select('core/editor').getCurrentPostId();
-            if ((options.path.startsWith('/wp/v2/posts/' + post_id) && options.method == 'PUT') ||
-                (options.path.startsWith('/wp/v2/posts/' + post_id + '/autosaves') && options.method == 'POST')) {
+            const post = wp.data.select('core/editor').getCurrentPost();
+            if ((options.path.startsWith('/wp/v2/posts/' + post.id) && options.method == 'PUT') ||
+                (options.path.startsWith('/wp/v2/posts/' + post.id + '/autosaves') && options.method == 'POST')) {
+                console.log('Post', post);
+                if (! post.hasOwnProperty('qtx_editor_lang')) {
+                    console.log('Missing field: \'qtx_editor_lang\' in post id=' + post.id);
+                    return next(options);
+                }
                 const newOptions = {
                     ...options,
                     data: {
                         ...options.data,
-                        'qtx_lang': 'fr'
+                        'qtx_editor_lang': post.qtx_editor_lang
                     }
                 };
                 const result = next(newOptions);
