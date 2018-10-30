@@ -25,16 +25,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 //add_filter( 'register_post_type_args', 'qtranxf_register_rest_controller', 10, 2 );
 
 function qtranxf_rest_prepare( $response, $post, $request ) {
+  global $q_config;
+
 	if ( $request['context'] !== 'edit' || $request->get_method() !== 'GET' ) {
 		return $response;
 	}
 
-	// TODO allow user to select editor lang
-  $editor_lang = 'fr';
-	// $editor_lang = $request->get_param( 'qtx_lang' );
-	//$editor_lang = $_GET[ 'qtx_lang' ];
-	if ( ! isset( $editor_lang ) ) {
-		return $response;
+  assert(! $q_config['url_info']['doing_front_end']);
+	// TODO allow user to select editor lang with buttons
+	$editor_lang = isset( $_GET[ 'qtx_lang' ] ) ? $_GET[ 'qtx_lang' ] : null;
+	if ( ! isset( $editor_lang ) || ! in_array ( $editor_lang, $q_config['enabled_languages'] ) ) {
+    $editor_lang = $q_config['url_info']['lang_admin'];
 	}
 
 	$response_data = $response->get_data();
@@ -50,27 +51,6 @@ function qtranxf_rest_prepare( $response, $post, $request ) {
 // TODO generalize to selected post types in options
 $post_type = 'post';
 add_filter( "rest_prepare_{$post_type}", 'qtranxf_rest_prepare', 99, 3 );
-
-function qtranxf_rest_post_dispatch( $response, $handler, $request ) {
-	if ( $request->get_method() !== 'PUT' && $request->get_method() !== 'POST' ) {
-		return $response;
-	}
-
-	$edit_lang = $request->get_param( 'qtx_lang' );
-	if ( ! isset( $qtx_lang ) ) {
-		return $response;
-	}
-
-	$response_data = $response->get_data();
-	if ( isset( $response_data['content'] ) && is_array( $response_data['content'] ) && isset( $response_data['content']['raw'] ) ) {
-		$response_data['title']['raw']   = qtranxf_use( $edit_lang, $response_data['title']['raw'] );
-		$response_data['content']['raw'] = qtranxf_use( $edit_lang, $response_data['content']['raw'] );
-		$response->set_data( $response_data );
-	}
-
-	return $response;
-}
-add_filter( 'rest_post_dispatch', 'qtranxf_rest_post_dispatch', 99, 3 );
 
 function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) {
 	if ( $request->get_method() !== 'PUT' && $request->get_method() !== 'POST' ) {
@@ -126,6 +106,28 @@ function qtranxf_rest_request_before_callbacks( $response, $handler, $request ) 
 	return $response;
 }
 add_filter( 'rest_request_before_callbacks', 'qtranxf_rest_request_before_callbacks', 99, 3 );
+
+function qtranxf_rest_request_after_callbacks( $response, $handler, $request ) {
+  if ( $request['context'] !== 'edit' || $request->get_method() !== 'PUT' && $request->get_method() !== 'POST' ) {
+    return $response;
+  }
+
+  $editor_lang = $request->get_param( 'qtx_editor_lang' );
+  if ( ! isset( $editor_lang ) ) {
+    return $response;
+  }
+
+  $response_data = $response->get_data();
+  if ( isset( $response_data['content'] ) && is_array( $response_data['content'] ) && isset( $response_data['content']['raw'] ) ) {
+    $response_data['title']['raw']   = qtranxf_use( $editor_lang, $response_data['title']['raw'] );
+    $response_data['content']['raw'] = qtranxf_use( $editor_lang, $response_data['content']['raw'] );
+    $response_data['qtx_editor_lang'] = $editor_lang;
+    $response->set_data( $response_data );
+  }
+
+  return $response;
+}
+add_filter( 'rest_request_after_callbacks', 'qtranxf_rest_request_after_callbacks', 99, 3 );
 
 function qtranxf_enqueue_block_editor_assets() {
 	$script_file = 'js/lib/editor-gutenberg';
