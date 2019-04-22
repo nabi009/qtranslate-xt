@@ -70,14 +70,14 @@ function qtranxf_language_form( $form_action, $button_name, $nonce_action ) {
                 <p class="qtranxs-notes"><?php _e( 'Choose the corresponding country flag for language. (Example: gb.png)', 'qtranslate' ) ?></p>
             </div>
             <script type="text/javascript">
-                //<![CDATA[
-                function switch_flag(url) {
-                    document.getElementById('preview_flag').style.display = "inline";
-                    document.getElementById('preview_flag').src = "<?php echo qtranxf_flag_location() ?>" + url;
-                }
+				//<![CDATA[
+				function switch_flag(url) {
+					document.getElementById('preview_flag').style.display = "inline";
+					document.getElementById('preview_flag').src = "<?php echo qtranxf_flag_location() ?>" + url;
+				}
 
-                switch_flag(document.getElementById('language_flag').value);
-                //]]>
+				switch_flag(document.getElementById('language_flag').value);
+				//]]>
             </script>
             <div class="form-field">
                 <label for="language_name"><?php _e( 'Name', 'qtranslate' );
@@ -177,7 +177,7 @@ function qtranxf_get_admin_sections() {
 }
 
 function qtranxf_conf() {
-	global $q_config, $qtranslate_options, $wpdb;
+	global $q_config;
 	//qtranxf_dbg_log('qtranxf_conf: REQUEST_TIME_FLOAT: ', $_SERVER['REQUEST_TIME_FLOAT']);
 	//qtranxf_dbg_log('qtranxf_conf: POST: ',$_POST);
 	//qtranxf_dbg_log('qtranxf_conf: GET: ',$_GET);
@@ -364,27 +364,27 @@ function qtranxf_conf() {
                                 <br/>
                                 <label for="hide_untranslated"><input type="checkbox" name="hide_untranslated"
                                                                       id="hide_untranslated"
-                                                                      value="1"<?php checked( $q_config['hide_untranslated'] ) ?>/> <?php _e( 'Hide Content which is not available for the selected language.', 'qtranslate' ) ?>
+                                                                      value="1"<?php checked( $q_config['hide_untranslated'] ) ?>/> <?php _e( 'Hide posts which content is not available for the selected language.', 'qtranslate' ) ?>
                                 </label>
                                 <br/>
                                 <p class="qtranxs-notes"><?php _e( 'When checked, posts will be hidden if the content is not available for the selected language. If unchecked, a message will appear showing all the languages the content is available in.', 'qtranslate' ) ?>
 									<?php _e( 'The message about available languages for the content of a post or a page may also appear if a single post display with an untranslated content if viewed directly.', 'qtranslate' ) ?>
 									<?php printf( __( 'This function will not work correctly if you installed %s on a blog with existing entries. In this case you will need to take a look at option "%s" under "%s" section.', 'qtranslate' ), 'qTranslate', __( 'Convert Database', 'qtranslate' ), __( 'Import', 'qtranslate' ) . '/' . __( 'Export', 'qtranslate' ) ) ?></p>
                                 <br/>
-                                <label for="show_displayed_language_prefix"><input type="checkbox"
-                                                                                   name="show_displayed_language_prefix"
-                                                                                   id="show_displayed_language_prefix"
-                                                                                   value="1"<?php checked( $q_config['show_displayed_language_prefix'] ) ?>/> <?php _e( 'Show displayed language prefix when content is not available for the selected language.', 'qtranslate' ) ?>
-                                </label>
-                                <br/>
-                                <p class="qtranxs-notes"><?php _e( 'This is relevant to all fields other than the main content of posts and pages. Such untranslated fields are always shown in an alternative available language, and will be prefixed with the language name in parentheses, if this option is on.', 'qtranslate' ) ?></p>
-                                <br/>
                                 <label for="show_alternative_content"><input type="checkbox"
                                                                              name="show_alternative_content"
                                                                              id="show_alternative_content"
-                                                                             value="1"<?php checked( $q_config['show_alternative_content'] ) ?>/> <?php _e( 'Show content in an alternative language when translation is not available for the selected language.', 'qtranslate' ) ?>
+                                                                             value="1"<?php checked( $q_config['show_alternative_content'] ) ?>/> <?php _e( 'Show post content in an alternative language when translation is not available for the selected language.', 'qtranslate' ) ?>
                                 </label>
                                 <p class="qtranxs-notes"><?php printf( __( 'When a page or a post with an untranslated content is viewed, a message with a list of other available languages is displayed, in which languages are ordered as defined by option "%s". If this option is on, then the content of the first available language will also be shown, instead of the expected language, for the sake of user convenience.', 'qtranslate' ), __( 'Default Language / Order', 'qtranslate' ) ) ?></p>
+                                <br/>
+                                <label for="show_displayed_language_prefix"><input type="checkbox"
+                                                                                   name="show_displayed_language_prefix"
+                                                                                   id="show_displayed_language_prefix"
+                                                                                   value="1"<?php checked( $q_config['show_displayed_language_prefix'] ) ?>/> <?php _e( 'Show displayed language prefix when field content is not available for the selected language.', 'qtranslate' ) ?>
+                                </label>
+                                <br/>
+                                <p class="qtranxs-notes"><?php _e( 'This is relevant to all fields other than the main content of posts and pages. Such untranslated fields are always shown in an alternative available language, and will be prefixed with the language name in parentheses, if this option is on.', 'qtranslate' ) ?></p>
                             </td>
                         </tr>
                         <tr>
@@ -530,13 +530,13 @@ function qtranxf_conf() {
                                 <label for="filter_options_mode_all"><input type="radio" name="filter_options_mode"
                                                                             id="filter_options_mode_all"
                                                                             value=<?php echo '"' . QTX_FILTER_OPTIONS_ALL . '"';
-								                                            checked( $q_config['filter_options_mode'], QTX_FILTER_OPTIONS_ALL ) ?>/> <?php _e( 'Filter all WordPress options for translation at front-end. It may hurt performance of the site, but ensures that all options are translated.', 'qtranslate' ) ?> <?php _e( 'Starting from version 3.2.5, only options with multilingual content get filtered, which should help on performance issues.', 'qtranslate' ) ?>
+									checked( $q_config['filter_options_mode'], QTX_FILTER_OPTIONS_ALL ) ?>/> <?php _e( 'Filter all WordPress options for translation at front-end. It may hurt performance of the site, but ensures that all options are translated.', 'qtranslate' ) ?> <?php _e( 'Starting from version 3.2.5, only options with multilingual content get filtered, which should help on performance issues.', 'qtranslate' ) ?>
                                 </label>
                                 <br/>
                                 <label for="filter_options_mode_list"><input type="radio" name="filter_options_mode"
                                                                              id="filter_options_mode_list"
                                                                              value=<?php echo '"' . QTX_FILTER_OPTIONS_LIST . '"';
-								                                             checked( $q_config['filter_options_mode'], QTX_FILTER_OPTIONS_LIST ) ?>/> <?php _e( 'Translate only options listed below (for experts only):', 'qtranslate' ) ?>
+									checked( $q_config['filter_options_mode'], QTX_FILTER_OPTIONS_LIST ) ?>/> <?php _e( 'Translate only options listed below (for experts only):', 'qtranslate' ) ?>
                                 </label>
                                 <br/>
                                 <input type="text" name="filter_options" id="qtranxs_filter_options"
@@ -676,6 +676,39 @@ function qtranxf_conf() {
 									echo ' ';
 									printf( __( 'Read %sIntegration Guide%s for more information on how to customize the configuration of %s.', 'qtranslate' ), '<a href="https://qtranslatexteam.wordpress.com/integration/" target="_blank">', '</a>', 'qTranslate&#8209;XT' ); ?>
                                 </p></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php _e( 'Built-in Modules', 'qtranslate' ) ?></th>
+                            <td>
+                                <label for="qtranxs_modules"
+                                       class="qtranxs_explanation"><?php _e( 'The built-in integration modules are automatically enabled if the related plugin is active and no incompatible plugin (e.g. legacy integration plugin) prevents them to be loaded.', 'qtranslate' ); ?></label>
+                                <br/>
+                                <table id="qtranxs_modules" class="widefat">
+                                    <thead>
+                                    <tr>
+                                        <th class="row-title">Name</th>
+                                        <th>Plugin</th>
+                                        <th>Module</th>
+                                        <th>Status</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+									<?php
+									$modules = QTX_Admin_Modules::get_modules_infos();
+									foreach ( $modules as $module ):
+										?>
+                                        <tr>
+                                            <td><?php echo $module['name'] ?></td>
+                                            <td><?php echo $module['plugin'] ?></td>
+                                            <td><?php echo $module['module'] ?></td>
+                                            <td style="color: <?php echo $module['color'] ?>">
+                                                <span class="dashicons <?php echo $module['icon'] ?>"></span>
+                                            </td>
+                                        </tr>
+									<?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </td>
                         </tr>
                         <tr>
                             <th scope="row"><?php _e( 'Configuration Files', 'qtranslate' ) ?></th>

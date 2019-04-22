@@ -6,6 +6,7 @@ header( 'Content-type: text/plain; charset=utf-8' );
 $dir    = 'core/common/main';
 $po_dir = 'language-translations';
 
+$languages = array();
 # Get all needed files
 $files = glob( $dir . '/*.xml' );
 foreach ( $files as $file ) {
@@ -39,8 +40,9 @@ foreach ( $languages as $lang_code => $language ) {
 		if ( ! isset( $languages[ $lang_code ]['translations'][ $matches[1] ] ) ) {
 			$languages[ $lang_code ]['translations'][ $matches[1] ] = $matches[5];
 		} else {
-			$languages[ $lang_code ]['translation_alernatives'][ $matches[1] ][] = array( 'type'        => $matches[4],
-			                                                                              'translation' => $matches[5]
+			$languages[ $lang_code ]['translation_alernatives'][ $matches[1] ][] = array(
+				'type'        => $matches[4],
+				'translation' => $matches[5]
 			);
 		}
 
@@ -212,6 +214,7 @@ $wp_langs = array(
 
 
 # Get all possible translation sources in the correct order
+$langs2translate = array();
 foreach ( $wp_langs as $wp_lang ) {
 	$langs2translate[ $wp_lang[1] ]['sources'][] = $wp_lang[1];
 	$langs2translate[ $wp_lang[1] ]['sources'][] = $wp_lang[4];
@@ -249,7 +252,7 @@ foreach ( $translations as $lang => $words ) {
 	$po_content = 'msgid ""' . "\n";
 	$po_content .= 'msgstr ""' . "\n";
 	$po_content .= '"Content-Type: text/plain; charset=UTF-8\n"' . "\n";
-	$po_content .= '"Language: ' . $langcode . '\n"' . "\n\n";
+	$po_content .= '"Language: ' . $lang . '\n"' . "\n\n";
 	foreach ( $words as $key => $translation ) {
 		$po_content .= 'msgid "' . $key . '"' . "\n";
 		$po_content .= 'msgstr "' . $translation . '"' . "\n";
@@ -257,6 +260,3 @@ foreach ( $translations as $lang => $words ) {
 	}
 	file_put_contents( $po_dir . '/language-' . $lang . '.po', $po_content );
 }
-
-
-?>

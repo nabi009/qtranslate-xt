@@ -70,11 +70,11 @@ function qtranxf_collect_translations( &$qfields, &$request, $edit_lang ) {
  */
 function qtranxf_decode_json_name_value( $val ) {
 	if ( strpos( $val, 'qtranslate-fields' ) === false ) {
-		return;
+		return null;
 	}
 	$nv = json_decode( stripslashes( $val ) );
 	if ( is_null( $nv ) ) {
-		return;
+		return null;
 	}
 
 	return qtranxf_decode_name_value( $nv );
@@ -186,8 +186,8 @@ function qtranxf_load_admin_page_config() {
 }
 
 /**
- * @since 3.4.7
  * @return bool true is we are on qtx configuration page.
+ * @since 3.4.7
  */
 function qtranxf_admin_is_config_page() {
 	static $is_config_page;
@@ -202,7 +202,7 @@ function qtranxf_admin_is_config_page() {
 }
 
 function qtranxf_admin_init() {
-	global $q_config, $pagenow;
+	global $q_config;
 	//qtranxf_dbg_log('5.qtranxf_admin_init:');
 
 	if ( current_user_can( 'manage_options' ) ) {
@@ -228,7 +228,7 @@ function qtranxf_admin_init() {
 		$next_thanks = false;
 	}
 	if ( $next_thanks === false ) {
-		$next_thanks = time() + rand( 100, 300 ) * 24 * 60 * 60;
+		$next_thanks = strtotime( '+' . rand( 100, 300 ) . 'days' );
 		update_option( 'qtranslate_next_thanks', $next_thanks );
 	}
 
@@ -284,6 +284,7 @@ function qtranxf_get_admin_page_config_post_type( $post_type ) {
 
 					return $page_config;
 				}
+				break;
 			default:
 				break;
 		}
@@ -455,9 +456,9 @@ function qtranxf_add_admin_footer_js() {
 	foreach ( $keys as $key ) {
 		$config[ $key ] = $q_config[ $key ];
 	}
-	$config['lsb_style_subitem'] = ( $q_config['lsb_style'] == 'Simple_Buttons.css' ) ? 'button' : '';
+	$config['lsb_style_subitem']      = ( $q_config['lsb_style'] == 'Simple_Buttons.css' ) ? 'button' : '';
 	$config['lsb_style_active_class'] = ( $q_config['lsb_style'] == 'Tabs_in_Block.css' ) ? 'wp-ui-highlight' : 'active';
-	$config['lsb_style_wrap_class'] = ( $q_config['lsb_style'] == 'Tabs_in_Block.css' ) ? 'wp-ui-primary' : '';
+	$config['lsb_style_wrap_class']   = ( $q_config['lsb_style'] == 'Tabs_in_Block.css' ) ? 'wp-ui-primary' : '';
 
 	$config['custom_fields']        = apply_filters( 'qtranslate_custom_fields', $q_config['custom_fields'] );
 	$config['custom_field_classes'] = apply_filters( 'qtranslate_custom_field_classes', $q_config['custom_field_classes'] );
@@ -513,7 +514,7 @@ function qtranxf_add_admin_footer_js() {
 	qtranxf_enqueue_scripts( $page_config['js'] );
 	?>
     <script type="text/javascript">
-        // <![CDATA[
+		// <![CDATA[
 		<?php
 		echo 'var qTranslateConfig=' . json_encode( $config ) . ';' . PHP_EOL;
 		// each script entry may define javascript code to be injected
@@ -527,7 +528,7 @@ function qtranxf_add_admin_footer_js() {
 		}
 		do_action( 'qtranslate_add_admin_footer_js' );
 		?>
-        //]]>
+		//]]>
     </script>
 	<?php
 }
@@ -581,7 +582,6 @@ function qtranxf_add_admin_highlight_css() {
 }
 
 function qtranxf_get_admin_highlight_css( $highlight_mode ) {
-	global $q_config;
 	$css = 'input.qtranxs-translatable, textarea.qtranxs-translatable, div.qtranxs-translatable {' . PHP_EOL;
 	switch ( $highlight_mode ) {
 		case QTX_HIGHLIGHT_MODE_BORDER_LEFT:// v3
@@ -822,18 +822,18 @@ function qtranxf_admin_notices_config() {
 	}
 
 	$screen = get_current_screen();
-	if ( isset( $screen->id ) && $screen->id == 'settings_page_qtranslate-x' ) {
+	if ( isset( $screen->id ) && $screen->id == 'settings_page_qtranslate-xt' ) {
 		$qtitle = '';
 	} else {
 		$qlink  = admin_url( 'options-general.php?page=qtranslate-xt' );
-		$qtitle = '<a href="' . $qlink . '" style="color:magenta">qTranslate&#8209;XT</a>:&nbsp;';
+		$qtitle = '<a href="' . $qlink . '">qTranslate&#8209;XT</a>:&nbsp;';
 	}
-	$fmt = '<div class="%1$s notice is-dismissible" id="qtranxs-%2$s-%1$s"><p>' . $qtitle . '%3$s</p></div>' . PHP_EOL;
+	$fmt = '<div class="notice notice-%1$s is-dismissible" id="qtranxs-%2$s-%1$s"><p>' . $qtitle . '%3$s</p></div>' . PHP_EOL;
 
 	if ( isset( $q_config['url_info']['errors'] ) ) {
 		if ( is_array( $q_config['url_info']['errors'] ) ) {
-			//translators: Colon after a title. Template reused from language menu item.
-			$hdr = sprintf( __( '%s:', 'qtranslate' ), '<strong><span style="color: red;">' . __( 'Error', 'qtranslate' ) . '</span></strong>' ) . '&nbsp;';
+			// translators: Colon after a title. Template reused from language menu item.
+			$hdr = sprintf( __( '%s:', 'qtranslate' ), '<strong>' . __( 'Error', 'qtranslate' ) . '</strong>' ) . '&nbsp;';
 			foreach ( $q_config['url_info']['errors'] as $key => $msg ) {
 				printf( $fmt, 'error', $key, $hdr . $msg );
 			}
@@ -842,10 +842,10 @@ function qtranxf_admin_notices_config() {
 	}
 	if ( isset( $q_config['url_info']['warnings'] ) ) {
 		if ( is_array( $q_config['url_info']['warnings'] ) ) {
-			//translators: Colon after a title. Template reused from language menu item.
-			$hdr = sprintf( __( '%s:', 'qtranslate' ), '<strong><span style="color: blue;">' . __( 'Warning', 'qtranslate' ) . '</span></strong>' ) . '&nbsp;';
+			// translators: Colon after a title. Template reused from language menu item.
+			$hdr = sprintf( __( '%s:', 'qtranslate' ), '<strong>' . __( 'Warning', 'qtranslate' ) . '</strong>' ) . '&nbsp;';
 			foreach ( $q_config['url_info']['warnings'] as $key => $msg ) {
-				printf( $fmt, 'update-nag', $key, $hdr . $msg );
+				printf( $fmt, 'warning', $key, $hdr . $msg );
 			}
 		}
 		unset( $q_config['url_info']['warnings'] );
@@ -853,7 +853,7 @@ function qtranxf_admin_notices_config() {
 	if ( isset( $q_config['url_info']['messages'] ) ) {
 		if ( is_array( $q_config['url_info']['messages'] ) ) {
 			foreach ( $q_config['url_info']['messages'] as $key => $msg ) {
-				printf( $fmt, 'updated', $key, $msg );
+				printf( $fmt, 'info', $key, $msg );
 			}
 		}
 		unset( $q_config['url_info']['messages'] );

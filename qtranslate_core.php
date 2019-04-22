@@ -3,6 +3,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once( QTRANSLATE_DIR . '/modules/qtx_modules_handler.php' );
+
 function qtranxf_init_language() {
 	global $q_config, $pagenow;
 	//qtranxf_dbg_log('1.qtranxf_init_language:');
@@ -140,8 +142,10 @@ function qtranxf_init_language() {
 
 	qtranxf_load_option_qtrans_compatibility();
 
+	QTX_Modules_Handler::load_modules_enabled();
+
 	/**
-	 * allow other plugins to initialize whatever they need for language
+	 * allow other plugins and modules to initialize whatever they need for language
 	 */
 	do_action( 'qtranslate_init_language', $url_info );
 	//qtranxf_dbg_log('qtranxf_init_language: done: url_info: ',$url_info);
@@ -181,8 +185,8 @@ function qtranxf_detect_language( &$url_info ) {
 	}
 
 	if ( ( ! $lang || ! isset( $url_info['doing_front_end'] ) )
-		 && ( defined( 'DOING_AJAX' ) || ! $url_info['cookie_enabled'] )
-		 && isset( $_SERVER['HTTP_REFERER'] )
+	     && ( defined( 'DOING_AJAX' ) || ! $url_info['cookie_enabled'] )
+	     && isset( $_SERVER['HTTP_REFERER'] )
 	) {
 		//get language from HTTP_REFERER, if needed, and detect front- vs back-end
 		$http_referer             = $_SERVER['HTTP_REFERER'];
@@ -213,7 +217,7 @@ function qtranxf_detect_language( &$url_info ) {
 				}
 			}
 			if ( ! $lang && $q_config['hide_default_language']
-				 && isset( $url_info['doing_front_end'] ) && $url_info['doing_front_end'] ) {
+			     && isset( $url_info['doing_front_end'] ) && $url_info['doing_front_end'] ) {
 				$lang = $q_config['default_language'];
 			}
 		}
@@ -329,9 +333,6 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 				 * $url_info['path'] - convert to language neutral or default
 				 */
 				$url_info = apply_filters( 'qtranslate_parse_language_info_mode', $url_info, $q_config['url_mode'] );
-				if ( isset( $url_info['lang_url'] ) ) {
-					$lang = $url_info['lang_url'];
-				}
 				break;
 		}
 	}
@@ -412,32 +413,27 @@ function qtranxf_detect_language_admin( &$url_info ) {
 function qtranxf_detect_language_front( &$url_info ) {
 	global $q_config;
 	//assert($url_info['doing_front_end']);
-	while ( true ) {
-		if ( isset( $_COOKIE[ QTX_COOKIE_NAME_FRONT ] ) ) {
-			$cs                            = null;
-			$lang                          = qtranxf_resolveLangCase( $_COOKIE[ QTX_COOKIE_NAME_FRONT ], $cs );
-			$url_info['lang_cookie_front'] = $lang;
-			if ( $lang ) {
-				break;
-			}
-		}
-
-		if ( $q_config['detect_browser_language']
-			 && ( ! isset( $_SERVER['HTTP_REFERER'] ) || strpos( $_SERVER['HTTP_REFERER'], $url_info['host'] ) === false )//external referrer or no referrer
-			 && ( empty( $url_info['wp-path'] ) || $url_info['wp-path'] == '/' )// home page is requested
-		) {
-			$lang                     = qtranxf_http_negotiate_language();
-			$url_info['lang_browser'] = $lang;
-			if ( $lang ) {
-				break;
-			}
-		}
-
-		$lang = $q_config['default_language'];
-		break;
+	$lang = null;
+	if ( isset( $_COOKIE[ QTX_COOKIE_NAME_FRONT ] ) ) {
+		$cs                            = null;
+		$lang                          = qtranxf_resolveLangCase( $_COOKIE[ QTX_COOKIE_NAME_FRONT ], $cs );
+		$url_info['lang_cookie_front'] = $lang;
 	}
+
+	if ( ! $lang && $q_config['detect_browser_language']
+	     && ( ! isset( $_SERVER['HTTP_REFERER'] ) || strpos( $_SERVER['HTTP_REFERER'], $url_info['host'] ) === false )//external referrer or no referrer
+	     && ( empty( $url_info['wp-path'] ) || $url_info['wp-path'] == '/' )// home page is requested
+	) {
+		$lang                     = qtranxf_http_negotiate_language();
+		$url_info['lang_browser'] = $lang;
+	}
+
+	if ( ! $lang ) {
+		$lang = $q_config['default_language'];
+	}
+
 	if ( ! isset( $url_info['doredirect'] )
-		 && ( ! $q_config['hide_default_language'] || $lang != $q_config['default_language'] )
+	     && ( ! $q_config['hide_default_language'] || $lang != $q_config['default_language'] )
 		//&& !$url_info['language_neutral_path']//already so
 	) {
 		$url_info['doredirect'] = 'language needs to be shown in url';
@@ -452,7 +448,7 @@ function qtranxf_setcookie_language( $lang, $cookie_name, $cookie_path, $cookie_
 	//	doing_it_wrong('qtranxf_setcookie_language', 'Headers are already sent, which should not be a case within action "plugins_loaded"', 'any');
 	//	return;
 	//}
-	setcookie( $cookie_name, $lang, time() + 31536000, $cookie_path, $cookie_domain, $secure );//one year
+	setcookie( $cookie_name, $lang, strtotime( '+1year' ), $cookie_path, $cookie_domain, $secure );//one year
 	//two weeks 1209600
 }
 
@@ -707,7 +703,7 @@ function qtranxf_load_option_bool( $nm, $default_value = null ) {
 						$q_config[ $nm ] = true;
 						break;
 					default:
-						$q_config[ $nm ] == ! empty( $val );
+						$q_config[ $nm ] = ! empty( $val );
 						break;
 				}
 				break;
@@ -1148,12 +1144,12 @@ function qtranxf_url_set_language( $urlinfo, $lang, $showLanguage ) {
 
 	// see if cookies are activated
 	if ( ! $showLanguage//there still is no language information in the converted URL
-		 && ! $q_config['url_info']['cookie_enabled']// there will be no way to take language from the cookie
-		 //&& empty($urlinfo['path']) //why this was here?
-		 //&& !isset($q_config['url_info']['internal_referer'])//three below replace this one?
-		 && $q_config['language'] != $q_config['default_language']//we need to be able to get language other than default
-		 && empty( $q_config['url_info']['lang_url'] )//we will not be able to get language from referrer path
-		 && empty( $q_config['url_info']['lang_query_get'] )//we will not be able to get language from referrer query
+	     && ! $q_config['url_info']['cookie_enabled']// there will be no way to take language from the cookie
+	     //&& empty($urlinfo['path']) //why this was here?
+	     //&& !isset($q_config['url_info']['internal_referer'])//three below replace this one?
+	     && $q_config['language'] != $q_config['default_language']//we need to be able to get language other than default
+	     && empty( $q_config['url_info']['lang_url'] )//we will not be able to get language from referrer path
+	     && empty( $q_config['url_info']['lang_query_get'] )//we will not be able to get language from referrer query
 	) {
 		// :( now we have to make unpretty URLs
 		qtranxf_add_query_arg( $urlinfo['query'], 'lang=' . $lang );
@@ -1422,7 +1418,6 @@ function qtranxf_split_blocks( $blocks, &$found = array() ) {
  * gets only part with encoded languages
  */
 function qtranxf_split_languages( $blocks ) {
-	global $q_config;
 	$result           = array();
 	$current_language = false;
 	foreach ( $blocks as $block ) {
@@ -1745,9 +1740,8 @@ function qtranxf_use_content( $lang, $content, $available_langs, $show_available
 
 	$available_langs = $alangs;
 	// set alternative language to the first available in the order of enabled languages
-	$alt_lang            = current( $available_langs );
-	$alt_content         = $content[ $alt_lang ];
-	$alt_lang_is_default = $alt_lang == $q_config['default_language'];
+	$alt_lang    = current( $available_langs );
+	$alt_content = $content[ $alt_lang ];
 
 	if ( ! $show_available ) {
 		if ( $q_config['show_displayed_language_prefix'] ) {
@@ -1779,40 +1773,14 @@ function qtranxf_use_content( $lang, $content, $available_langs, $show_available
 	}
 	//qtranxf_dbg_log('$language_list=',$language_list);
 
-	$msg = '';
+	$msg    = preg_replace( '/%LANG:([^:]*):([^%]*)%/', $language_list, $q_config['not_available'][ $lang ] );
+	$output = '<p class="qtranxs-available-languages-message qtranxs-available-languages-message-' . $lang . '">' . $msg . '</p>';
 	if ( ! empty( $q_config['show_alternative_content'] ) && $q_config['show_alternative_content'] ) {
-		// show content in  alternative language
-		if ( sizeof( $available_langs ) > 1 ) {
-			if ( $alt_lang_is_default ) {
-				// translators: this message is shown to user, when a translation is not available for the active language, but there are multiple other translations available, and post content is shown in the default language of the site.
-				$msg = __( 'For the sake of viewer convenience, the content is shown below in the default language of this site.', 'qtranslate' );
-			} else {
-				// translators: this message is shown to user, when a translation is not available neither for the active language nor for default one, but there are multiple other translations available, and post content is shown in the first available language.
-				$msg = __( 'For the sake of viewer convenience, the content is shown below in one of the available alternative languages.', 'qtranslate' );
-			}
-			// translators: this message is appended to one of the two messages above.
-			$msg .= ' ' . __( 'You may click one of the links to switch the site language to another available language.', 'qtranslate' );
-		} else {
-			// translators: this message is shown to user, when a translation is not available for the active language, and there is only one other availabe language.
-			$msg = __( 'For the sake of viewer convenience, the content is shown below in the alternative language.', 'qtranslate' );
-			// translators: this message is appended to the message above.
-			$msg .= ' ' . __( 'You may click the link to switch the active language.', 'qtranslate' );
-		}
-		$altlanguagecontent = ' ' . $msg . '</p>' . $alt_content;
-	} else {
-		//by default, do not show alternative content
-		$altlanguagecontent = '</p>';
+		$output .= $alt_content;
 	}
-
-	$output = '<p class="qtranxs-available-languages-message qtranxs-available-languages-message-' . $lang . '">' . preg_replace( '/%LANG:([^:]*):([^%]*)%/', $language_list, $q_config['not_available'][ $lang ] ) . $altlanguagecontent;
-
-	/*
-	 * Chance to customize $output
-	*/
 
 	return apply_filters( 'i18n_content_translation_not_available', $output, $lang, $language_list, $alt_lang, $alt_content, $msg, $q_config );
 }
-
 
 function qtranxf_showAllSeparated( $text ) {
 	if ( empty( $text ) ) {

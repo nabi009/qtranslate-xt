@@ -340,24 +340,26 @@ function qtranxf_resetConfig() {
 	// internal private options not loaded by default
 	delete_option( 'qtranslate_next_update_mo' );
 	delete_option( 'qtranslate_next_thanks' );
+	delete_option( 'qtranslate_modules' );
 
 	// obsolete options
 	delete_option( 'qtranslate_custom_pages' );
 	delete_option( 'qtranslate_plugin_js_composer_off' );
 	delete_option( 'qtranslate_widget_css' );
 	delete_option( 'qtranslate_version' );
+	delete_option( 'qtranslate_version_previous');
+	delete_option( 'qtranslate_versions');
 	delete_option( 'qtranslate_disable_header_css' );
 
 	if ( isset( $_POST['qtranslate_reset3'] ) ) {
 		delete_option( 'qtranslate_term_name' );
-		if ( isset( $_POST['qtranslate_reset4'] ) ) {//not implemented yet
-			delete_option( 'qtranslate_version_previous' );
-			//and delete translations in posts
-		}
 	}
+
 	remove_filter( 'locale', 'qtranxf_localeForCurrentLanguage', 99 );
 	qtranxf_reloadConfig();
 	add_filter( 'locale', 'qtranxf_localeForCurrentLanguage', 99 );
+
+	QTX_Admin_Modules::update_modules_status();
 }
 
 add_action( 'qtranslate_saveConfig', 'qtranxf_resetConfig', 20 );
@@ -718,7 +720,9 @@ function qtranxf_parse_post_type_excluded() {
 	unset( $_POST['post_types'] );
 	unset( $_POST['post_types_all'] );
 	$_POST['post_type_excluded'] = $post_type_excluded;
+
 	//qtranxf_dbg_log('qtranxf_parse_post_type_excluded: $_POST[post_type_excluded]: ',$_POST['post_type_excluded']);
+	return true;
 }
 
 function qtranxf_updateSettings() {
@@ -809,7 +813,7 @@ function qtranxf_updateSettings() {
 			$json_config_files          = implode( PHP_EOL, $json_files );
 			$_POST['json_config_files'] = $json_config_files;
 			$nerr                       = isset( $q_config['url_info']['errors'] ) ? count( $q_config['url_info']['errors'] ) : 0;
-			$cfg                        = qtranxf_load_config_files( $json_files );
+			qtranxf_load_config_files( $json_files );
 			if ( ! empty( $q_config['url_info']['errors'] ) && $nerr != count( $q_config['url_info']['errors'] ) ) {//new errors occurred
 				remove_action( 'admin_notices', 'qtranxf_admin_notices_errors' );
 				if ( $json_files == $q_config['config_files'] ) {
