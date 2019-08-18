@@ -68,8 +68,7 @@ class QTX_Admin_Modules {
 		}
 
 		if ( $active ) {
-			$incompatible_plugin = $module_def['incompatible'];
-			if ( isset( $incompatible_plugin ) && call_user_func( $func_is_active, $incompatible_plugin ) ) {
+			if ( isset( $module_def['incompatible'] ) && call_user_func( $func_is_active, $module_def['incompatible'] ) ) {
 				$module_status = QTX_MODULE_STATUS_BLOCKED;
 			} else {
 				$module_status = QTX_MODULE_STATUS_ACTIVE;
@@ -179,7 +178,7 @@ class QTX_Admin_Modules {
 					break;
 				case QTX_MODULE_STATUS_UNDEFINED:
 				default:
-					$info['plugin'] = __( 'Unknown', 'qtranslate' );
+					$info['plugin'] = __( 'Undefined', 'qtranslate' );
 					$info['module'] = __( 'Inactive', 'qtranslate' );
 					$info['icon']   = 'dashicons-editor-help';
 					$info['color']  = '';
