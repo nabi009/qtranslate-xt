@@ -1,5 +1,5 @@
 /*
-	Copyright 2014  qTranslate Team  (email : qTranslateTeam@gmail.com )
+	Copyright 2019  qTranslate-XT  (https://github.com/qtranslate/qtranslate-xt)
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,19 +24,15 @@
  * - qTranslateConfig.js - is a place where custom Java script functions are stored, if needed.
  * Read Integration Guide: https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide for more information.
  */
-/*
-// debugging tools, do not check in
-var cc=0;
-function c(v){ ++cc; console.log('== '+cc+': '+v); }
-function ct(v){ c(v); console.trace(); }
-function co(t,o){ ++cc; console.log('== '+cc+': '+t+'%o',o); }
-*/
+
+// global config
+var qTranslateConfig = window.qTranslateConfig;
 
 /**
  * since 3.2.7
  */
 qtranxj_get_split_blocks = function (text) {
-	var split_regex = /(<!--:[a-z]{2}-->|<!--:-->|\[:[a-z]{2}\]|\[:\]|\{:[a-z]{2}\}|\{:\})/gi; // @since 3.3.6 swirly brackets
+	var split_regex = /(<!--:[a-z]{2}-->|<!--:-->|\[:[a-z]{2}]|\[:]|{:[a-z]{2}}|{:})/gi; // @since 3.3.6 swirly brackets
 	return text.xsplit(split_regex);
 };
 
@@ -53,31 +49,28 @@ qtranxj_split = function (text) {
  */
 qtranxj_split_blocks = function (blocks) {
 	var result = new Object;
-	//for(var i=0; i<qTranslateConfig.enabled_languages.length; ++i)
 	for (var lang in qTranslateConfig.language_config) {
-		//var lang=qTranslateConfig.enabled_languages[i];
 		result[lang] = '';
 	}
-	//if(!qtranxj_isArray(blocks))//since 3.2.7
 	if (!blocks || !blocks.length)
 		return result;
-	if (blocks.length == 1) { //no language separator found, enter it to all languages
+	if (blocks.length === 1) {
+		// no language separator found, enter it to all languages
 		var b = blocks[0];
-		//for(var j=0; j<qTranslateConfig.enabled_languages.length; ++j){
 		for (var lang in qTranslateConfig.language_config) {
-			//var lang=qTranslateConfig.enabled_languages[j];
 			result[lang] += b;
 		}
 		return result;
 	}
 	var clang_regex = /<!--:([a-z]{2})-->/gi;
-	var blang_regex = /\[:([a-z]{2})\]/gi;
-	var slang_regex = /\{:([a-z]{2})\}/gi; // @since 3.3.6 swirly brackets
+	var blang_regex = /\[:([a-z]{2})]/gi;
+	var slang_regex = /{:([a-z]{2})}/gi; // @since 3.3.6 swirly brackets
 	var lang = false;
 	var matches;
 	for (var i = 0; i < blocks.length; ++i) {
 		var b = blocks[i];
-		if (!b.length) continue;
+		if (!b.length)
+			continue;
 		matches = clang_regex.exec(b);
 		clang_regex.lastIndex = 0;
 		if (matches != null) {
@@ -96,7 +89,7 @@ qtranxj_split_blocks = function (blocks) {
 			lang = matches[1];
 			continue;
 		}
-		if (b == '<!--:-->' || b == '[:]' || b == '{:}') {
+		if (b === '<!--:-->' || b === '[:]' || b === '{:}') {
 			lang = false;
 			continue;
 		}
@@ -104,7 +97,8 @@ qtranxj_split_blocks = function (blocks) {
 			if (!result[lang]) result[lang] = b;
 			else result[lang] += b;
 			lang = false;
-		} else { //keep neutral text
+		} else {
+			// keep neutral text
 			for (var key in result) {
 				result[key] += b;
 			}
@@ -113,18 +107,13 @@ qtranxj_split_blocks = function (blocks) {
 	return result;
 };
 
-function qtranxj_get_cookie(cname) {
-	var nm = cname + "=";
-	var ca = document.cookie.split(';');
-	//c('ca='+ca);
-	for (var i = 0; i < ca.length; ++i) {
-		var s = ca[i];
-		var sa = s.split('=');
-		if (sa[0].trim() != cname)
+function qtranxj_get_cookie(cookieName) {
+	var cookies = document.cookie.split(';');
+	for (var i = 0; i < cookies.length; ++i) {
+		var pair = cookies[i].split('=');
+		if (pair.length < 2 || pair[0].trim() !== cookieName)
 			continue;
-		if (ca.length < 2)
-			continue;
-		return sa[1].trim();
+		return pair[1].trim();
 	}
 	return '';
 }
@@ -151,25 +140,16 @@ String.prototype.xsplit = function (_regEx) {
 	}
 	if (start < this.length)
 		arr.push(this.slice(start));
-	if (start == this.length)
-		arr.push(''); //delim at the end
+	if (start === this.length)
+		arr.push(''); // delim at the end
 	return arr;
 };
-
-//Since 3.2.7 removed: function qtranxj_isArray(obj){ return obj.constructor.toString().indexOf('Array') >= 0; }
 
 function qtranxj_ce(tagName, props, pNode, isFirst) {
 	var el = document.createElement(tagName);
 	if (props) {
 		for (var prop in props) {
-			//try
-			{
-				el[prop] = props[prop];
-			}
-			//catch(err)
-			{
-				//Handle errors here
-			}
+			el[prop] = props[prop];
 		}
 	}
 	if (pNode) {
@@ -238,7 +218,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				qTranslateConfig.activeLanguage = qTranslateConfig.language;
 				if (this.isLanguageEnabled(qTranslateConfig.activeLanguage)) {
 					setLangCookie(qTranslateConfig.activeLanguage);
-				} else {//no languages are enabled
+				} else {
+					// no languages are enabled
 					qTranslateConfig.LSB = false;
 				}
 			}
@@ -256,17 +237,14 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		this.getActiveLanguage = function () {
 			return qTranslateConfig.activeLanguage;
 		};
-		//this.getActiveLanguageName = function() { return qTranslateConfig.language_name[qTranslateConfig.activeLanguage]; }
 
 		var contentHooks = {};
-		var contentHookId = 0;
 
 		var updateFusedValueH = function (id, value) {
 			if (qTranslateConfig.RAW)
 				return;
 			var h = contentHooks[id];
 			var text = value.trim();
-			//c('updateFusedValueH['+id+'] lang='+h.lang+'; text:'+text);
 			h.fields[h.lang].value = text;
 		};
 
@@ -287,16 +265,12 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 * @since 3.3.2
 		 */
 		this.addContentHook = function (inpField, encode, field_name) {
-			//co('addContentHook: inpField:',inpField);
-			//co('addContentHook: encode:',encode);
-			//co('addContentHook: field_name:',field_name);
 			if (!inpField) return false;
 			switch (inpField.tagName) {
 				case 'TEXTAREA':
 					break;
 				case 'INPUT':
-					//co('addContentHook: inpField.type=',inpField.type);
-					//reject the types which cannot be multilingual
+					// reject the types which cannot be multilingual
 					switch (inpField.type) {
 						case 'button':
 						case 'checkbox':
@@ -305,7 +279,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 						case 'submit':
 							return false;
 					}
-					//if(inpField.type.match(/(button|checkbox|password|radio|submit)/)) return false;
 					break;
 				default:
 					return false;
@@ -315,12 +288,11 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				if (!inpField.name) return false;
 				field_name = inpField.name;
 			}
-			//if( typeof inpField.value !== 'string' ) return false;
 			if (inpField.id) {
 				if (contentHooks[inpField.id]) {
 					if ($.contains(document, inpField))
 						return contentHooks[inpField.id];
-					//otherwise some Java script already removed previously hooked element
+					// otherwise some Java script already removed previously hooked element
 					qtx.removeContentHook(inpField);
 				}
 			} else if (!contentHooks[field_name]) {
@@ -331,8 +303,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					++idx;
 					inpField.id = field_name + idx;
 				} while (contentHooks[inpField.id]);
-				//$(inpField).uniqueId();//does not work
-				//$(inpField).each(function (i,e) { e.uniqueId(); });//does not work
 			}
 
 			/**
@@ -341,12 +311,9 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			 */
 			inpField.className += ' qtranxs-translatable';
 
-			//co('addContentHook: id=',inpField.id);
 			var h = contentHooks[inpField.id] = {};
-			//h.id = inpField.id;
 			h.name = field_name;
 			h.contentField = inpField;
-			//c('addContentHook: inpField.value='+inpField.value);
 			h.lang = qTranslateConfig.activeLanguage;
 
 			var qtx_prefix;
@@ -363,10 +330,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 						break;
 				}
 			} else {
-				//if(inpField.tagName==='TEXTAREA')
-				//	encode='<';
-				//else
-				encode = '[';//since 3.1 we get rid of <--:--> encoding
+				// since 3.1 we get rid of <--:--> encoding
+				encode = '[';
 				qtx_prefix = 'qtranslate-fields[';
 			}
 
@@ -435,25 +400,11 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			if (h.sepfield)
 				inpField.parentNode.insertBefore(h.sepfield, inpField);
 
-			/*
-			if(window.tinyMCE){
-			  //c('addContentHook: window.tinyMCE: tinyMCE.editors.length='+tinyMCE.editors.length);
-			  //tinyMCE.editors are not yet set up at this point.
-			  for(var i=0; i<tinyMCE.editors.length; ++i){
-				var ed=tinyMCE.editors[i];
-				if(ed.id != inpField.id) continue;
-				//c('addContentHook: updateTinyMCE: ed.id='+ed.id);//never fired yet
-				h.mce=ed;
-				//updateTinyMCE(ed,text);
-				updateTinyMCE(h);
-			  }
-			}
-			*/
 			return h;
 		};
 		this.addContentHookC = function (inpField) {
-			return qtx.addContentHook(inpField, '[');
-		}; //'<'
+			return qtx.addContentHook(inpField, '['); // TODO shouldn't it be '<' ?!
+		};
 		this.addContentHookB = function (inpField) {
 			return qtx.addContentHook(inpField, '[');
 		};
@@ -463,7 +414,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		};
 		this.addContentHookByIdName = function (nm) {
 			var sep;
-			//if(nm.indexOf('<')==0 || nm.indexOf('[')==0){
 			switch (nm[0]) {
 				case '<':
 				case '[':
@@ -476,8 +426,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			return qtx.addContentHookById(nm, sep);
 		};
 		this.addContentHookByIdC = function (id) {
-			return qtx.addContentHookById(id, '[');
-		}; //'<'
+			return qtx.addContentHookById(id, '['); // TODO shouldn't it be '<' ?!
+		};
 		this.addContentHookByIdB = function (id) {
 			return qtx.addContentHookById(id, '[');
 		};
@@ -504,7 +454,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 
 		this.addContentHooksByClass = function (nm, container) {
 			var sep;
-			if (nm.indexOf('<') == 0 || nm.indexOf('[') == 0) {
+			if (nm.indexOf('<') === 0 || nm.indexOf('[') === 0) {
 				sep = nm.substring(0, 1);
 				nm = nm.substring(1);
 			}
@@ -553,12 +503,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				return false;
 			var h = contentHooks[inpField.id];
 			removeContentHookH(h);
-			/* @since 3.2.9.8 - h.contents -> h.fields
-			inpField.onblur = function(){};
-			inpField.name=inpField.name.replace(/^edit-/,'');
-			inpField.value=h.mlContentField.value;
-			$(h.mlContentField).remove();
-			*/
+			// @since 3.2.9.8 - h.contents -> h.fields
 			$(inpField).removeClass('qtranxs-translatable');
 			return true;
 		};
@@ -585,9 +530,9 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				return '(' + qTranslateConfig.language + ') ' + contents[qTranslateConfig.language];
 			if (contents[qTranslateConfig.default_language])
 				return '(' + qTranslateConfig.default_language + ') ' + contents[qTranslateConfig.default_language];
-			var default_value = null;
 			for (var lang in contents) {
-				if (!contents[lang]) continue;
+				if (!contents[lang])
+					continue;
 				return '(' + lang + ') ' + contents[lang];
 			}
 			return '';
@@ -615,15 +560,10 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			if (!nd.nodeValue)
 				return 0;
 			var blocks = qtranxj_get_split_blocks(nd.nodeValue);
-			if (!blocks || !blocks.length || blocks.length == 1)
+			if (!blocks || !blocks.length || blocks.length === 1)
 				return 0;
-			//co('addDisplayHookNode: nd: ',nd);
-			//co('addDisplayHookNode: blocks: ',blocks);
 			var h = {};
 			h.nd = nd;
-			//co('addDisplayHookNode: nd=',nd);
-			//c('addDisplayHookNode: nodeValue: "'+nd.nodeValue+'"');
-			//c('addDisplayHookNode: content='+content);
 			h.contents = qtranxj_split_blocks(blocks);
 			completeDisplayContent(h.contents);
 			nd.nodeValue = h.contents[qTranslateConfig.activeLanguage];
@@ -639,15 +579,13 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			if (!nd.hasAttribute(attr)) return 0;
 			var value = nd.getAttribute(attr);
 			var blocks = qtranxj_get_split_blocks(value);
-			if (!blocks || !blocks.length || blocks.length == 1)
+			if (!blocks || !blocks.length || blocks.length === 1)
 				return 0;
-			//co('addDisplayHookAttr: nd: ',nd);
 			var h = {};
 			h.nd = nd;
 			h.attr = attr;
 			h.contents = qtranxj_split_blocks(blocks);
 			completeDisplayContent(h.contents);
-			//nd.value=h.contents[qTranslateConfig.activeLanguage];
 			nd.setAttribute(attr, h.contents[qTranslateConfig.activeLanguage]);
 			displayHookAttrs.push(h);
 			return 1;
@@ -660,20 +598,16 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 * @since 3.2.7 switched to use of nodeValue instead of innerHTML.
 		 */
 		this.addDisplayHook = function (elem) {
-			//co('addDisplayHook: this: ',this);
 			if (!elem || !elem.tagName)
 				return 0;
 			switch (elem.tagName) {
 				case 'TEXTAREA':
 					return 0;
 				case 'INPUT':
-					switch (elem.type) {
-						case 'submit':
-							if (elem.value)
-								return addDisplayHookAttr(elem, 'value');
-						default:
-							return 0;
+					if (elem.type === 'submit' && elem.value) {
+						return addDisplayHookAttr(elem, 'value');
 					}
+					return 0;
 				default:
 					break;
 			}
@@ -682,12 +616,13 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			if (elem.childNodes && elem.childNodes.length) {
 				for (var i = 0; i < elem.childNodes.length; ++i) {
 					var nd = elem.childNodes[i];
-					switch (nd.nodeType) {//http://www.w3.org/TR/REC-DOM-Level-1/level-one-core.html#ID-1950641247
-						case 1://ELEMENT_NODE
-							cnt += qtx.addDisplayHook(nd);//recursive call
+					switch (nd.nodeType) {
+						// http://www.w3.org/TR/REC-DOM-Level-1/level-one-core.html#ID-1950641247
+						case 1: // ELEMENT_NODE
+							cnt += qtx.addDisplayHook(nd);
 							break;
-						case 2://ATTRIBUTE_NODE
-						case 3://TEXT_NODE
+						case 2: // ATTRIBUTE_NODE
+						case 3: // TEXT_NODE
 							cnt += addDisplayHookNode(nd);
 							break;
 						default:
@@ -710,15 +645,11 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 
 		var updateTinyMCE = function (h) {
 			text = h.contentField.value;
-			//co('updateTinyMCE: window.switchEditors: ',window.switchEditors);
-			//c('updateTinyMCE: text:'+text);
 			if (h.wpautop && window.switchEditors) {
-				//text = window.switchEditors.pre_wpautop( text );
 				text = window.switchEditors.wpautop(text);
-				//c('updateTinyMCE:wpautop:'+text);
 			}
 			h.mce.setContent(text, {format: 'html'});
-		}
+		};
 
 		var onTabSwitch = function (lang) {
 			//var qtx = this;
@@ -726,9 +657,9 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			for (var i = displayHookNodes.length; --i >= 0;) {
 				var h = displayHookNodes[i];
 				if (h.nd.parentNode) {
-					h.nd.nodeValue = h.contents[lang];//IE gets upset here if node was removed
+					h.nd.nodeValue = h.contents[lang]; // IE gets upset here if node was removed
 				} else {
-					displayHookNodes.splice(i, 1);//node was removed by some other function
+					displayHookNodes.splice(i, 1); // node was removed by some other function
 				}
 			}
 			for (var i = displayHookAttrs.length; --i >= 0;) {
@@ -736,7 +667,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				if (h.nd.parentNode) {
 					h.nd.setAttribute(h.attr, h.contents[lang]);
 				} else {
-					displayHookAttrs.splice(i, 1);//node was removed by some other function
+					displayHookAttrs.splice(i, 1); // node was removed by some other function
 				}
 			}
 			if (qTranslateConfig.RAW)
@@ -755,7 +686,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					h.fields[h.lang].value = text;
 					h.lang = lang;
 					var value = h.fields[h.lang].value;
-					if (h.contentField.placeholder && value != '') {//since 3.2.7
+					if (h.contentField.placeholder && value !== '') {
+						// since 3.2.7
 						h.contentField.placeholder = '';
 					}
 					h.contentField.value = value;
@@ -773,15 +705,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			}
 		};
 
-		/*
-		  onTabSwitchCustom=function()
-		  {
-			//co('onTabSwitch: this',this);
-			//co('onTabSwitch: qtx',qTranslateConfig.qtx);
-			pg.onTabSwitch(this.lang,qTranslateConfig.qtx);
-		  }
-		*/
-
 		/**
 		 * Designed as interface for other plugin integration. The documentation is available at
 		 * https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide
@@ -789,11 +712,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 * @since 3.0
 		 */
 		this.addDisplayHooks = function (elems) {
-			//c('addDisplayHooks: elems.length='+elems.length);
 			for (var i = 0; i < elems.length; ++i) {
 				var e = elems[i];
-				//co('addDisplayHooks: e=',e);
-				//co('addDisplayHooks: e.tagName=',e.tagName);
 				qtx.addDisplayHook(e);
 			}
 		};
@@ -831,10 +751,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 * @since 3.3
 		 */
 		this.addDisplayHooksByClass = function (nm, container) {
-			//co('addDisplayHooksByClass: container:',container);
 			var elems = container.getElementsByClassName(nm);
-			//co('addDisplayHooksByClass: elems('+nm+'):',elems);
-			//co('addDisplayHooksByClass: elems.length=',elems.length);
 			qtx.addDisplayHooks(elems);
 		};
 
@@ -846,7 +763,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 */
 		this.addDisplayHooksByTagInClass = function (nm, tag, container) {
 			var elems = container.getElementsByClassName(nm);
-			//c('addDisplayHooksByClass: elems.length='+elems.length);
 			for (var i = 0; i < elems.length; ++i) {
 				var elem = elems[i];
 				var items = elem.getElementsByTagName(tag);
@@ -861,14 +777,13 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 * @since 3.0 - addContentHooks
 		 */
 		this.addCustomContentHooks = function () {
-			//c('qTranslateConfig.custom_fields.length='+qTranslateConfig.custom_fields.length);
 			for (var i = 0; i < qTranslateConfig.custom_fields.length; ++i) {
-				var nm = qTranslateConfig.custom_fields[i];
-				qtx.addContentHookByIdName(nm);
+				var fieldName = qTranslateConfig.custom_fields[i];
+				qtx.addContentHookByIdName(fieldName);
 			}
 			for (var i = 0; i < qTranslateConfig.custom_field_classes.length; ++i) {
-				var nm = qTranslateConfig.custom_field_classes[i];
-				qtx.addContentHooksByClass(nm);
+				var className = qTranslateConfig.custom_field_classes[i];
+				qtx.addContentHooksByClass(className);
 			}
 			/* gutenberg
 			if (qTranslateConfig.LSB)
@@ -930,14 +845,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					if (!form)
 						form = document;
 				}
-				//co('form=',form);
-				//c('frm.fields.length='+frm.fields.length);
 				for (var handle in frm.fields) {
 					var fld = frm.fields[handle];
-					//co('fld['+handle+']: ',fld);
-					//c('encode='+fld.encode);
-					//c('id='+fld.id);
-					//c('class='+fld.class);
 					var containers = [];
 					if (fld.container_id) {
 						var container = document.getElementById(fld.container_id);
@@ -958,10 +867,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 							if (fld.jquery) {
 								for (var i = 0; i < containers.length; ++i) {
 									var container = containers[i];
-									//co('addPageHooks:display: container: ',container);
-									//$(container).find(fld.jquery).each(function(i,e){qtx.addDisplayHook(e);});//also ok
 									var fields = $(container).find(fld.jquery);
-									//co('addPageHooks:display: jquery='+fld.jquery+': fields.length=',fields.length);
 									if (fld.attrs) {
 										qtx.addDisplayHooksAttrs(fields, fld.attrs);
 									} else {
@@ -979,23 +885,19 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 								}
 							}
 							break;
-						case '['://b - bracket
-						case '<'://c - comment
-						case '{'://s - swirly/curly bracket
+						case '[': // b - bracket
+						case '<': // c - comment
+						case '{': // s - swirly/curly bracket
 						case 'byline':
 						default:
 							if (fld.jquery) {
 								for (var i = 0; i < containers.length; ++i) {
 									var container = containers[i];
-									//$(container).find(fld.jquery).each(function(i,e){qtx.addContentHook(e,sep);});//also works
-									//co('addPageHooks:content: jquery='+fld.jquery+': container=',container);
 									var fields = $(container).find(fld.jquery);
-									//co('addPageHooks:content: jquery='+fld.jquery+': fields.length=',fields.length);
 									qtx.addContentHooks(fields, sep, fld.name);
 								}
 							} else {
 								var id = fld.id ? fld.id : handle;
-								//co('addPageHooks:content: id=',id);
 								qtx.addContentHookById(id, sep, fld.name);
 							}
 							break;
@@ -1013,8 +915,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				if (!h)
 					return;
 				if (h.mce) {
-					//already initialized
-					return;
+					return;  // already initialized
 				}
 				h.mce = ed;
 
@@ -1026,7 +927,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				ed.getElement().className += ' qtranxs-translatable';
 
 				var updateTinyMCEonInit = h.updateTinyMCEonInit;
-				if (updateTinyMCEonInit == null) {// 'tmce-active' or 'html-active' was not provided on the wrapper.
+				if (updateTinyMCEonInit == null) {
+					// 'tmce-active' or 'html-active' was not provided on the wrapper
 					var text_e = ed.getContent({format: 'html'}).replace(/\s+/g, '');
 					var text_h = h.contentField.value.replace(/\s+/g, '');
 					/**
@@ -1054,7 +956,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					 *
 					 * If somebody finds out a better way, please let us know at qtranslateteam@gmail.com.
 					 */
-					updateTinyMCEonInit = text_e != text_h;
+					updateTinyMCEonInit = text_e !== text_h;
 				}
 				if (updateTinyMCEonInit) {
 					updateTinyMCE(h);
@@ -1064,7 +966,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 
 			/** Sets hooks on HTML-loaded TinyMCE editors via tinyMCEPreInit.mceInit. */
 			setTinyMceInit = function () {
-				//co('setTinyMceInit: this: ', this);
 				if (!window.tinyMCEPreInit || !window.tinyMCE) {
 					return;
 				}
@@ -1083,7 +984,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 									h.updateTinyMCEonInit = true;
 								if (tinymce.DOM.hasClass(h.wrapper, 'html-active'))
 									h.updateTinyMCEonInit = false;
-								//otherwise h.updateTinyMCEonInit stays undetermined
+								// otherwise h.updateTinyMCEonInit stays undetermined
 							}
 						}
 					} else {
@@ -1092,7 +993,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					tinyMCEPreInit.mceInit[key].init_instance_callback = function (ed) {
 						setEditorHooks(ed);
 					}
-					//co('setTinyMceInit: id=', key);
 				}
 			};
 			// gutenberg setTinyMceInit();
@@ -1146,7 +1046,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		this.delLanguageSwitchBeforeListener = function (func) {
 			for (var i = 0; i < qTranslateConfig.onTabSwitchFunctionsSave.length; ++i) {
 				var f = qTranslateConfig.onTabSwitchFunctionsSave[i];
-				if (f != func)
+				if (f !== func)
 					continue;
 				qTranslateConfig.onTabSwitchFunctionsSave.splice(i, 1);
 				return;
@@ -1166,7 +1066,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 */
 		this.addLanguageSwitchAfterListener = function (func) {
 			qTranslateConfig.onTabSwitchFunctionsLoad.push(func);
-		}
+		};
 
 		/**
 		 * @since 3.3.2
@@ -1177,7 +1077,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		this.delLanguageSwitchAfterListener = function (func) {
 			for (var i = 0; i < qTranslateConfig.onTabSwitchFunctionsLoad.length; ++i) {
 				var f = qTranslateConfig.onTabSwitchFunctionsLoad[i];
-				if (f != func)
+				if (f !== func)
 					continue;
 				qTranslateConfig.onTabSwitchFunctionsLoad.splice(i, 1);
 				return;
@@ -1195,7 +1095,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			for (var lang in qTranslateConfig.tabSwitches) {
 				var tabSwitches = qTranslateConfig.tabSwitches[lang];
 				for (var i = 0; i < tabSwitches.length; ++i) {
-					var tabSwitch = tabSwitches[i];
 					var tabSwitchParent = tabSwitches[i].parentElement;
 					tabSwitchParent.style.display = display;
 					break;
@@ -1250,10 +1149,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 
 		addMultilingualHooks();
 
-		//co('displayHookNodes.length=',displayHookNodes.length);
-		//co('displayHookNodes: ',displayHookNodes);
-		//co('displayHookAttrs.length=',displayHookAttrs.length);
-		//co('contentHooks: ',contentHooks);
 		/* gutenberg
 		if (!displayHookNodes.length && !displayHookAttrs.length) {
 			var ok = false;
@@ -1279,7 +1174,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		 * @since 3.3.2
 		 */
 		this.switchActiveLanguage = function (lang) {
-			//co('switchActiveLanguage: this=',this);
 			if (qTranslateConfig.activeLanguage === lang) {
 				return;
 			}
@@ -1292,7 +1186,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 						ok2switch = false;
 				}
 				if (!ok2switch)
-					return;//cancel button switch, if one of onTabSwitchFunctionsSave returned 'false'.
+					return; // cancel button switch, if one of onTabSwitchFunctionsSave returned 'false'
 
 				var tabSwitches = qTranslateConfig.tabSwitches[qTranslateConfig.activeLanguage];
 				for (var i = 0; i < tabSwitches.length; ++i) {
@@ -1340,7 +1234,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			if ($('.qtranxs-lang-switch-wrap').hasClass('copying')) {
 				$('.qtranxs-lang-switch').each(function () {
 					$(this).attr('orig-title', $(this).attr('title'));
-					if ($(this).attr('lang') == qTranslateConfig.activeLanguage)
+					if ($(this).attr('lang') === qTranslateConfig.activeLanguage)
 						$(this).attr('title', qTranslateConfig.strings.CopyFromAlt);
 					else
 						$(this).attr('title', qTranslateConfig.strings.CopyFrom + ' [:' + $(this).attr('lang') + ']');
@@ -1361,10 +1255,10 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				var mce = h.mce && !h.mce.hidden;
 				var value = mce ? h.mce.getContent({format: 'html'}) : h.contentField.value;
 				if (value)
-					continue; //do not overwrite existent content
+					continue; // do not overwrite existent content
 				value = h.fields[langFrom].value;
 				if (!value)
-					continue; //there is nothing to copy
+					continue;
 				h.contentField.value = value;
 				if (mce)
 					updateTinyMCE(h);
@@ -1393,13 +1287,13 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					onclick: qtx.clickSwitchLanguage
 				}, langSwitchWrap);
 				var tabItem = tabSwitch;
-				if (qTranslateConfig.lsb_style_subitem == 'button') {
+				if (qTranslateConfig.lsb_style_subitem === 'button') {
 					// reuse WordPress secondary button
 					tabItem = qtranxj_ce('button', {className: 'button button-secondary', type: 'button'}, tabSwitch);
 				}
 				qtranxj_ce('img', {src: flag_location + lang_conf.flag}, tabItem);
 				qtranxj_ce('span', {innerHTML: lang_conf.name}, tabItem);
-				if (qTranslateConfig.activeLanguage == lang) {
+				if (qTranslateConfig.activeLanguage === lang) {
 					tabSwitch.classList.add(qTranslateConfig.lsb_style_active_class);
 					$(tabSwitch).find('.button').addClass('active');
 				}
@@ -1434,10 +1328,10 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 
 			var inside_elems = mb.getElementsByClassName('inside');
 			if (!inside_elems.length)
-				return; //consistency check in case WP did some changes
+				return; // consistency check in case WP did some changes
 
 			mb.className += ' closed';
-			$(mb).find('.hndle').remove(); //original h3 element is replaced with span below
+			$(mb).find('.hndle').remove(); // original h3 element is replaced with span below
 
 			var sp = document.createElement('span');
 			mb.insertBefore(sp, inside_elems[0]);
@@ -1448,18 +1342,16 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			$('#qtranxs-meta-box-lsb .hndle').unbind('click.postboxes');
 		};
 
-		//co('qTranslateConfig.LSB=',qTranslateConfig.LSB);
 		if (qTranslateConfig.LSB) {
 			//additional initialization
 			// gutenberg this.addContentHooksTinyMCE();
 			setupMetaBoxLSB();
 
-			//create sets of LSB
+			// create sets of LSB
 			var anchors = [];
 			if (qTranslateConfig.page_config && qTranslateConfig.page_config.anchors) {
 				for (var id in qTranslateConfig.page_config.anchors) {
 					var anchor = qTranslateConfig.page_config.anchors[id];
-					//co('anchor: ', anchor);
 					var f = document.getElementById(id);
 					if (f) {
 						anchors.push({f: f, where: anchor.where});
@@ -1472,7 +1364,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					}
 				}
 			}
-			//co('anchors: ', anchors);
 			if (!anchors.length) {
 				var f = pg.langSwitchWrapAnchor;
 				if (!f) {
@@ -1482,7 +1373,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			}
 			for (var i = 0; i < anchors.length; ++i) {
 				var anchor = anchors[i];
-				//co('anchor['+i+']: ', anchor);
 				if (!anchor.where || anchor.where.indexOf('before') >= 0) {
 					var langSwitchWrap = qtx.createSetOfLSB();
 					anchor.f.parentNode.insertBefore(langSwitchWrap, anchor.f);
@@ -1525,7 +1415,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 	qTranslateConfig.js.get_qtx = function () {
 		if (!qTranslateConfig.qtx)
 			qTranslateConfig.qtx = new qTranslateX(qTranslateConfig.js);
-		//co('get_qtx: qtx: ', qTranslateConfig.qtx);
 		return qTranslateConfig.qtx;
 	};
 

@@ -39,13 +39,14 @@ function qtranxf_get_term_joined( $obj, $taxonomy = null ) {
 }
 
 /**
- * @since 3.4.6.8
- * @return array translations of the term found.
- *
  * @param string $lang two-letter language code to search for $term.
  * @param string $default_lang two-letter language code of the default language.
  * @param string $term name of term in language $lang.
  * @param string $taxonomy is not used for now.
+ *
+ * @return array translations of the term found.
+ *
+ * @since 3.4.6.8
  */
 function qtranxf_term_find_translations( $lang, $default_lang, $term, $taxonomy = null ) {
 	global $q_config;
@@ -115,21 +116,11 @@ function qtranxf_useAdminTermLibJoin( $obj, $taxonomies = null, $args = null ) {
  */
 function qtranxf_term_sanitize_name( $value, $term, $taxonomy = null, $context = null ) {
 	global $pagenow;
-	if ( empty( $context ) ) {
-		return $value;
+	if ( $context == 'display' && $pagenow == 'edit.php' ) {
+		return qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage( $value );
 	}
-	switch ( $context ) {
-		case 'display':
-			if ( $pagenow == 'edit.php' ) {
-				return qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage( $value );
-			} else {
-				return $value;
-			}
-		case 'db':
-			return $value;
-		default:
-			return $value;
-	}
+
+	return $value;
 }
 
 add_filter( 'term_name', 'qtranxf_term_sanitize_name', 5, 4 );//used in function sanitize_term_field called from function sanitize_term with default context like 'display'
@@ -168,13 +159,13 @@ function qtranxf_term_sanitize_name_unslashed( $term, $taxonomy = null ) {
 }
 
 /**
- * @since 3.4.6.9
- * Response to filter "pre_term_{$field}" in function 'sanitize_term_field' with $field='name' and $context='db'
- *
  * @param string $term slashed value of a term name, which may be an ML value.
  * @param string $taxonomy provided to the filter, but is not used here.
  *
  * @return string slashed term name in the default language. Translations found are stored for possible further processing in $q_config['terms_sanitized'][$term_db], where $term_db is an unslashed value of term name in the default language.
+ * @since 3.4.6.9
+ * Response to filter "pre_term_{$field}" in function 'sanitize_term_field' with $field='name' and $context='db'
+ *
  */
 function qtranxf_term_sanitize_name_db( $term, $taxonomy = null ) {
 	global $q_config;
@@ -192,7 +183,8 @@ function qtranxf_term_sanitize_name_db( $term, $taxonomy = null ) {
  * Response to filter 'get_terms_args', data is unslashed.
  */
 function qtranxf_term_get_args( $args, $taxonomies = null ) {
-	if ( ! empty( $args['name'] ) ) {//expected in default language after applying sanitize_term_field
+	if ( ! empty( $args['name'] ) ) {
+		// expected in default language after applying sanitize_term_field
 		$nms = $args['name'];
 		if ( is_array( $nms ) ) {
 			foreach ( $nms as $k => $nm ) {
@@ -298,7 +290,7 @@ function qtranxf_term_set_translation( $term_id, $tt_id, $taxonomy ) {
 
 	$langs[ $default_language ] = $nm;
 
-	//keep enabled languages only in the order
+	// keep enabled languages only in the order
 	$ts = array();
 	foreach ( $q_config['enabled_languages'] as $lng ) {
 		if ( empty( $langs[ $lng ] ) ) {
@@ -311,18 +303,16 @@ function qtranxf_term_set_translation( $term_id, $tt_id, $taxonomy ) {
 		$ts[ $lng ] = $val;
 	}
 
-	if ( count( $ts ) == 1 ) //default only
-	{
-		return;
+	if ( count( $ts ) == 1 ) {
+		return; // default only
 	}
 
-	//store new translations
+	// store new translations
 	$term_name        = &$q_config['term_name'];
 	$term_name[ $nm ] = $ts;
 	update_option( 'qtranslate_term_name', $term_name );
 }
 
-//add_action( 'pre_insert_term', 'qtranxf_pre_insert_term', 5, 2 );
 add_action( 'created_term', 'qtranxf_term_set_translation', 5, 3 );
 add_action( 'edited_term', 'qtranxf_term_set_translation', 5, 3 );
 
@@ -356,8 +346,7 @@ function qtranxf_admin_list_cats( $text ) {
 				return $text;
 			}
 			$texts = qtranxf_split_blocks( $blocks );
-			//$text = qtranxf_join_c($texts);
-			$text = qtranxf_join_b( $texts );//with closing tag
+			$text  = qtranxf_join_b( $texts ); // with closing tag
 
 			return $text;
 		default:

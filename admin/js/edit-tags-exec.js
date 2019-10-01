@@ -17,12 +17,11 @@
     };
 
     var the_list = $('#the-list');
-    //co('the_list.children: ', the_list.children());
     var rcnt = $('#the-list > tr').length;
 
     var onRowAdd = function () {
       var trs = the_list.children();
-      if (rcnt == trs.length)
+      if (rcnt === trs.length)
         return false;
       var ok = rcnt > trs.length;
       rcnt = trs.length;
@@ -39,7 +38,7 @@
       $(o).bind("DOMSubtreeModified", onRowAdd);
     });
 
-    //remove "Quick Edit" links for now
+    // remove "Quick Edit" links for now
     $('#the-list > tr > td.name span.inline').css('display', 'none');
   });
 })(jQuery);

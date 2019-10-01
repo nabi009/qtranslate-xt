@@ -99,7 +99,7 @@ function qwpseo_admin_filters() {
 			break;
 		case 'post.php':
 		case 'post-new.php':
-			if ( $q_config['editor_mode'] == QTX_EDITOR_MODE_SINGLGE ) {
+			if ( $q_config['editor_mode'] == QTX_EDITOR_MODE_SINGLE ) {
 				add_filter( 'get_post_metadata', 'qwpseo_get_post_metadata', 5, 4 );
 				//add_filter( 'option_blogname', 'qtranxf_useCurrentLanguageIfNotFoundShowEmpty');
 			}
@@ -236,7 +236,7 @@ add_action( 'wpseo_xmlsitemaps_config', 'qwpseo_xmlsitemaps_config' );
  */
 function qwpseo_encode_swirly( $value ) {
 	//qtranxf_dbg_log('qwpseo_encode_swirly: $value: ',$value);
-	$value = preg_replace( '#\[:([a-z]{2}|)\]#i', '{:$1}', $value );
+	$value = preg_replace( '#\[:([a-z]{2}|)]#i', '{:$1}', $value );
 
 	return $value;
 }

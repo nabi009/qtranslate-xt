@@ -4,6 +4,46 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * @since 3.3.8.4
+ */
+function qtranxf_add_admin_notice( $msg, $kind ) {
+	global $q_config;
+	if ( isset( $q_config['url_info'][ $kind ] ) ) {
+		if ( ! in_array( $msg, $q_config['url_info'][ $kind ] ) ) {
+			$q_config['url_info'][ $kind ][] = $msg;
+		}
+	} else {
+		if ( ! isset( $q_config['url_info'] ) ) {
+			$q_config['url_info'] = array();
+		}
+		$q_config['url_info'][ $kind ] = array( $msg );
+	}
+}
+
+/**
+ * @since 3.3.7
+ */
+function qtranxf_add_error( $msg ) {
+	qtranxf_add_admin_notice( $msg, 'errors' );
+}
+
+function qtranxf_add_warning( $msg ) {
+	qtranxf_add_admin_notice( $msg, 'warnings' );
+}
+
+function qtranxf_add_message( $msg ) {
+	qtranxf_add_admin_notice( $msg, 'messages' );
+}
+
+/**
+ * @since 3.3.1
+ */
+function qtranxf_error_log( $msg ) {
+	qtranxf_add_error( $msg );
+	error_log( 'qTranslate-X: ' . strip_tags( $msg ) );
+}
+
+/**
  * Enqueue Javascript files listed in $jss.
  * @since 3.5.1
  */
@@ -104,7 +144,6 @@ function qtranxf_array_compare( $a, $b ) {
 
 function qtranxf_join_texts( $texts, $sep ) {
 	switch ( $sep ) {
-		//case '<': return qtranxf_join_c($texts);//no longer in use
 		case 'byline':
 			return qtranxf_join_byline( $texts );
 		case '{':
@@ -114,31 +153,22 @@ function qtranxf_join_texts( $texts, $sep ) {
 	}
 }
 
-function qtranxf_stripSlashesIfNecessary( $str ) {
-	/**
-	 * @since 3.2.9.8.4 WordPress now always supplies slashed data
-	 */
-	$str = stripslashes( $str );
-
-	return $str;
+/**
+ * @since 3.4.6.9
+ */
+function qtranxf_clean_request( $name ) {
+	unset( $_GET[ $name ] );
+	unset( $_POST[ $name ] );
+	unset( $_REQUEST[ $name ] );
 }
 
 /**
  * @since 3.4.6.9
  */
-function qtranxf_clean_request( $nm ) {
-	unset( $_GET[ $nm ] );
-	unset( $_POST[ $nm ] );
-	unset( $_REQUEST[ $nm ] );
-}
-
-/**
- * @since 3.4.6.9
- */
-function qtranxf_clean_request_of( $type, $nm ) {
-	unset( $_GET[ $type ][ $nm ] );
-	unset( $_POST[ $type ][ $nm ] );
-	unset( $_REQUEST[ $type ][ $nm ] );
+function qtranxf_clean_request_of( $type, $name ) {
+	unset( $_GET[ $type ][ $name ] );
+	unset( $_POST[ $type ][ $name ] );
+	unset( $_REQUEST[ $type ][ $name ] );
 	if ( empty( $_GET[ $type ] ) ) {
 		unset( $_GET[ $type ] );
 	}
@@ -258,9 +288,6 @@ function qtranxf_fetch_file_selection( $dir, $suffix = '.css' ) {
 	return $files;
 }
 
-/**
- * former qtranxf_fixAdminBar($wp_admin_bar)
- */
 function qtranxf_before_admin_bar_render() {
 	global $wp_admin_bar, $q_config;
 	if ( ! isset( $wp_admin_bar ) ) {
@@ -273,7 +300,6 @@ function qtranxf_before_admin_bar_render() {
 	}//sometimes $nodes is NULL
 	$lang = $q_config['language'];
 	foreach ( $nodes as $node ) {
-		//$nd = qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage($node);
 		$nd = qtranxf_use( $lang, $node );
 		$wp_admin_bar->add_node( $nd );
 	}
@@ -282,7 +308,7 @@ function qtranxf_before_admin_bar_render() {
 
 function qtranxf_admin_the_title( $title ) {
 	// For nav menus, keep the raw value as the languages are handled client-side (LSB)
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset($_REQUEST['action']) && $_REQUEST['action'] == 'add-menu-item' ) {
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_REQUEST['action'] ) && $_REQUEST['action'] == 'add-menu-item' ) {
 		// When a nav menu is being added it is first handled by AJAX, see "wp_ajax_add_menu_item" in ajax-actions.php
 		// For the call to the filter "the_title", see "wp_setup_nav_menu_item" in nav-menus.php
 		return $title;
@@ -300,7 +326,6 @@ function qtranxf_admin_the_title( $title ) {
 
 add_filter( 'the_title', 'qtranxf_admin_the_title', 0 );
 
-//filter added in qtranslate_hooks.php
 if ( ! function_exists( 'qtranxf_trim_words' ) ) {
 	function qtranxf_trim_words( $text, $num_words, $more, $original_text ) {
 		//qtranxf_dbg_log('qtranxf_trim_words: $text: ',$text);
@@ -315,7 +340,8 @@ if ( ! function_exists( 'qtranxf_trim_words' ) ) {
 			$texts[ $key ] = wp_trim_words( $txt, $num_words, $more );
 		}
 
-		return qtranxf_join_b( $texts );//has to be 'b', because 'c' gets stripped in /wp-admin/includes/nav-menu.php:182: esc_html( $item->description )
+		// has to be 'b', because 'c' gets stripped in /wp-admin/includes/nav-menu.php:182: esc_html( $item->description )
+		return qtranxf_join_b( $texts );
 	}
 }
 
@@ -330,8 +356,9 @@ if ( ! function_exists( 'qtranxf_trim_words' ) ) {
 if ( ! function_exists( 'qtranxf_htmledit_pre' ) ) {
 	function qtranxf_htmledit_pre( $output ) {
 		if ( ! empty( $output ) ) {
+			// convert only < > &
 			$output = htmlspecialchars( $output, ENT_NOQUOTES, get_option( 'blog_charset' ), false );
-		} // convert only < > &
+		}
 
 		return apply_filters( 'htmledit_pre', $output );
 	}
@@ -370,26 +397,10 @@ function qtranxf_updateGettextDatabases( $force = false, $only_for_language = ''
 	return qtranxf_updateGettextDatabasesEx( $force, $only_for_language );
 }
 
-/* this did not work, need more investigation
-function qtranxf_enable_blog_title_filters($name)
-{
-	add_filter('option_blogname', 'qtranxf_filter_options_general');
-	add_filter('option_blogdescription', 'qtranxf_filter_options_general');
-}
-add_action( 'get_header', 'qtranxf_enable_blog_title_filters' );
-
-function qtranxf_disable_blog_title_filters($name)
-{
-	remove_filter('option_blogname', 'qtranxf_filter_options_general');
-	remove_filter('option_blogdescription', 'qtranxf_filter_options_general');
-}
-add_action( 'wp_head', 'qtranxf_disable_blog_title_filters' );
-*/
-
 function qtranxf_add_conf_filters() {
 	global $q_config;
 	switch ( $q_config['editor_mode'] ) {
-		case QTX_EDITOR_MODE_SINGLGE:
+		case QTX_EDITOR_MODE_SINGLE:
 		case QTX_EDITOR_MODE_RAW:
 			add_filter( 'gettext', 'qtranxf_gettext', 0 );
 			add_filter( 'gettext_with_context', 'qtranxf_gettext_with_context', 0 );
@@ -397,7 +408,7 @@ function qtranxf_add_conf_filters() {
 			break;
 		case QTX_EDITOR_MODE_LSB:
 		default:
-			//applied in /wp-includes/class-wp-editor.php
+			// applied in /wp-includes/class-wp-editor.php
 			add_filter( 'the_editor', 'qtranxf_the_editor' );
 			break;
 	}
@@ -453,7 +464,7 @@ function qtranxf_add_meta_box_LSB( $post_type, $post = null ) {
 	if ( empty( $page_config ) ) {
 		return;
 	}
-	//translators: expected in WordPress default textdomain
+	// translators: expected in WordPress default textdomain
 	add_meta_box( 'qtranxs-meta-box-lsb', qtranxf_translate_wp( 'Language' ), 'qtranxf_meta_box_LSB', $post_type, 'normal', 'low' );
 }
 
@@ -467,7 +478,7 @@ function qtranxf_post_type_optional( $post_type ) {
 	switch ( $post_type ) {
 		case 'revision':
 		case 'nav_menu_item':
-			return false; //no option for this type
+			return false; // no option for this type
 		default:
 			return true;
 	}
@@ -508,10 +519,11 @@ function qtranxf_verify_nonce( $nonce_name, $nonce_field = '_wpnonce' ) {
 }
 
 /**
+ * TODO this looks unnecessary, it might be possible to use json_decode directly with right options
  * @since 3.4.6.5
  */
-function qtranxf_decode_name_value_pair( &$a, $nam, $val ) {
-	if ( preg_match( '#([^\[]*)\[([^\]]+)\](.*)#', $nam, $matches ) ) {
+function qtranxf_decode_name_value_pair( &$a, $name, $value ) {
+	if ( preg_match( '#([^\[]*)\[([^]]+)](.*)#', $name, $matches ) ) {
 		$n = $matches[1];
 		$k = $matches[2];
 		$s = $matches[3];
@@ -525,25 +537,26 @@ function qtranxf_decode_name_value_pair( &$a, $nam, $val ) {
 			$a[ $n ] = array();
 		}
 		if ( empty( $s ) ) {
-			$a[ $n ][ $k ] = $val;
+			$a[ $n ][ $k ] = $value;
 		} else {
-			qtranxf_decode_name_value_pair( $a[ $n ], $k . $s, $val );//recursive call
+			qtranxf_decode_name_value_pair( $a[ $n ], $k . $s, $value );
 		}
 	} else {
-		$a[ $nam ] = $val;
+		$a[ $name ] = $value;
 	}
 }
 
 /**
+ * TODO this looks unnecessary, it might be possible to use json_decode directly with right options
  * @since 3.4.6.5
  */
-function qtranxf_decode_name_value( $data ) {
-	$a = array();
-	foreach ( $data as $nv ) {
-		qtranxf_decode_name_value_pair( $a, $nv->name, wp_slash( $nv->value ) );
+function qtranxf_decode_name_value( $name_values ) {
+	$decoded = array();
+	foreach ( $name_values as $name_value ) {
+		qtranxf_decode_name_value_pair( $decoded, $name_value->name, wp_slash( $name_value->value ) );
 	}
 
-	return $a;
+	return $decoded;
 }
 
 add_filter( 'manage_posts_columns', 'qtranxf_languageColumnHeader' );
