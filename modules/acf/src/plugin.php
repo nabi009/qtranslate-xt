@@ -89,9 +89,15 @@ class acf_qtranslate_plugin {
 
 	/**
 	 * Get the active language
+     *
+     * IMPORTANT!
+     * The active language should only be used for a default selection but the rendering should be "non-restrictive".
+     * In LSB mode, we should not assume which language the client is going to select eventually.
+     * Though we are likely to select the "wrong" language, the correct selection will be adjusted client-side.
+     * In single mode, the rendering should be the correct one though, as the language remains the same.
 	 */
 	public function get_active_language() {
-		return apply_filters( 'acf_qtranslate_get_active_language', qtranxf_getLanguage() );
+		return qtranxf_getLanguage();
 	}
 
 	/**
@@ -99,10 +105,12 @@ class acf_qtranslate_plugin {
 	 */
 	public function admin_enqueue_scripts() {
 		wp_enqueue_style( 'acf_qtranslate_common', plugins_url( '/assets/common.css', ACF_QTRANSLATE_PLUGIN ), array( 'acf-input' ) );
-		wp_enqueue_script( 'acf_qtranslate_common', plugins_url( '/assets/common.js', ACF_QTRANSLATE_PLUGIN ), array(
+		$script = SCRIPT_DEBUG ? 'assets/common.js' : 'assets/common.min.js';
+		$version = SCRIPT_DEBUG ? filemtime( ACF_QTRANSLATE_PLUGIN_DIR . $script ) : QTX_VERSION;
+		wp_enqueue_script( 'acf_qtranslate_common', plugins_url( $script, ACF_QTRANSLATE_PLUGIN ), array(
 			'acf-input',
 			'underscore'
-		) );
+		), $version );
 	}
 
 	/**

@@ -107,17 +107,6 @@ qtranxj_split_blocks = function (blocks) {
 	return result;
 };
 
-function qtranxj_get_cookie(cookieName) {
-	var cookies = document.cookie.split(';');
-	for (var i = 0; i < cookies.length; ++i) {
-		var pair = cookies[i].split('=');
-		if (pair.length < 2 || pair[0].trim() !== cookieName)
-			continue;
-		return pair[1].trim();
-	}
-	return '';
-}
-
 String.prototype.xsplit = function (_regEx) {
 	// Most browsers can do this properly, so let them work, they'll do it faster
 	if ('a~b'.split(/(~)/).length === 3) {
@@ -164,6 +153,18 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 }
 
 (function ($) {
+	// the edit language corresponds to the current LSB selection or the main admin language for single mode
+	var keyEditLanguage = 'qtranslate-xt-admin-edit-language';
+	var storeEditLanguage = function (lang) {
+		try {
+			sessionStorage.setItem(keyEditLanguage, lang);
+		}
+		catch (e) {
+			// no big deal if this can't be stored
+			console.log('Failed to store "' + keyEditLanguage + '" with sessionStorage', e);
+		}
+	};
+
 	var qTranslateX = function (pg) {
 		var qtx = this;
 
@@ -208,24 +209,21 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			return !!qTranslateConfig.language_config[lang];
 		};
 
-		var setLangCookie = function (lang) {
-			document.cookie = 'qtrans_edit_language=' + lang;
-		};
-
 		if (qTranslateConfig.LSB) {
-			qTranslateConfig.activeLanguage = qtranxj_get_cookie('qtrans_edit_language');
+			qTranslateConfig.activeLanguage = sessionStorage.getItem(keyEditLanguage);
 			if (!qTranslateConfig.activeLanguage || !this.isLanguageEnabled(qTranslateConfig.activeLanguage)) {
 				qTranslateConfig.activeLanguage = qTranslateConfig.language;
 				if (this.isLanguageEnabled(qTranslateConfig.activeLanguage)) {
-					setLangCookie(qTranslateConfig.activeLanguage);
+					storeEditLanguage(qTranslateConfig.activeLanguage);
 				} else {
-					// no languages are enabled
+					// fallback to single mode
 					qTranslateConfig.LSB = false;
 				}
 			}
 		} else {
 			qTranslateConfig.activeLanguage = qTranslateConfig.language;
-			setLangCookie(qTranslateConfig.activeLanguage);
+			// no need to store for the current mode, but just in case the LSB are used later
+			storeEditLanguage(qTranslateConfig.activeLanguage);
 		}
 
 		/**
@@ -366,6 +364,22 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					var f = qtranxj_ce('input', {name: fnm, type: 'hidden', className: 'hidden', value: text});
 					h.fields[lang] = f;
 					inpField.parentNode.insertBefore(f, inpField);
+				}
+
+				// insert a hidden element in the form so that the edit language is sent to the server
+				$form = $(inpField).closest('form');
+				if ($form.length) {
+					var $hidden = $form.find('input[name="qtranslate-edit-language"]');
+					if (!$hidden.length) {
+						qtranxj_ce('input', {
+							type: 'hidden',
+							name: 'qtranslate-edit-language',
+							value: qTranslateConfig.activeLanguage
+						}, $form[0], true);
+					}
+				}
+				else {
+					console.error('No form found for translatable field id=', inpField.id);
 				}
 			}
 
@@ -652,8 +666,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		};
 
 		var onTabSwitch = function (lang) {
-			//var qtx = this;
-			setLangCookie(lang);
+			storeEditLanguage(lang);
+
 			for (var i = displayHookNodes.length; --i >= 0;) {
 				var h = displayHookNodes[i];
 				if (h.nd.parentNode) {
@@ -1194,8 +1208,11 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					$(tabSwitches[i]).find('.button').removeClass('active');
 				}
 			}
+
 			var langFrom = qTranslateConfig.activeLanguage;
 			qTranslateConfig.activeLanguage = lang;
+			$('input[name="qtranslate-edit-language"]').val(lang);
+
 			{
 				var tabSwitches = qTranslateConfig.tabSwitches[qTranslateConfig.activeLanguage];
 				for (var i = 0; i < tabSwitches.length; ++i) {
@@ -1214,17 +1231,17 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 			var tabSwitch = $(this).hasClass('button') ? this.parentNode : this;
 			var lang = tabSwitch.lang;
 			if (!lang) {
-				alert('qTranslate-X: This should not have happened: Please, report this incident to the developers: !lang');
+				alert('qTranslate-XT: This should not have happened: Please, report this incident to the developers: !lang');
 				return;
 			}
 			if ($('.qtranxs-lang-switch-wrap').hasClass('copying')) {
 				qtx.copyContentFrom(lang);
 				$(tabSwitch).find('.button').blur();	// remove focus of source language in case of layout with button
+				$('.qtranxs-lang-switch-wrap').removeClass('copying');
+				$('.qtranxs-lang-copy .button').removeClass('active');
 			} else {
 				qtx.switchActiveLanguage(lang);
 			}
-			$('.qtranxs-lang-switch-wrap').removeClass('copying');
-			$('.qtranxs-lang-copy .button').removeClass('active');
 		};
 
 		this.toggleCopyFrom = function () {

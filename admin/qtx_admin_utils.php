@@ -202,7 +202,16 @@ function qtranxf_ensure_language_set( &$langs, $lang, $default_value = null ) {
 function qtranxf_getLanguageEdit() {
 	global $q_config;
 
-	return isset( $_COOKIE['qtrans_edit_language'] ) ? $_COOKIE['qtrans_edit_language'] : $q_config['language'];
+	if ( ! isset( $_REQUEST['qtranslate-edit-language'] ) ) {
+		throw new InvalidArgumentException( 'Missing "qtranslate-edit-language" field in $_REQUEST!' );
+	}
+
+	$lang = $_REQUEST['qtranslate-edit-language'];
+	if ( ! in_array( $lang, $q_config['enabled_languages'] ) ) {
+		throw new UnexpectedValueException( 'The requested language "' . $lang . '" defined in "qtranslate-edit-language" is not enabled!' );
+	}
+
+	return $lang;
 }
 
 function qtranxf_languageColumnHeader( $columns ) {

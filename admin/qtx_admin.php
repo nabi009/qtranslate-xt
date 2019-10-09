@@ -72,7 +72,7 @@ function qtranxf_decode_json_name_value( $value ) {
 		return null;
 	}
 
-    $name_value = json_decode( stripslashes( $value ) );
+	$name_value = json_decode( stripslashes( $value ) );
 	if ( is_null( $name_value ) ) {
 		return null;
 	}
@@ -215,7 +215,6 @@ function qtranxf_admin_init() {
 	if ( current_user_can( 'manage_options' ) && qtranxf_admin_is_config_page()
 		// TODO run this only if one of the forms or actions submitted --> && !empty($_POST)
 	) {
-		$q_config['url_info']['qtranslate-settings-url'] = admin_url( 'options-general.php?page=qtranslate-xt' );
 		require_once( QTRANSLATE_DIR . '/admin/qtx_admin_options_update.php' );
 		qtranxf_editConfig();
 	}
@@ -527,11 +526,14 @@ function qtranxf_add_admin_footer_js() {
 function qtranxf_add_admin_head_js( $enqueue_script = true ) {
 	if ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) {
 		$js_options = 'js/options.js';
+		$version    = filemtime( __DIR__ . '/' . $js_options );
 	} else {
 		$js_options = 'js/options.min.js';
+		$version    = QTX_VERSION;
 	}
 	if ( $enqueue_script ) {
-		wp_enqueue_script( 'qtranslate-admin-options', plugins_url( $js_options, __FILE__ ), array(), QTX_VERSION );
+
+		wp_enqueue_script( 'qtranslate-admin-options', plugins_url( $js_options, __FILE__ ), array(), $version );
 	} else {
 		echo '<script type="text/javascript">' . PHP_EOL . '// <![CDATA[' . PHP_EOL;
 		$plugin_dir_path = plugin_dir_path( __FILE__ );
@@ -657,8 +659,9 @@ add_filter( 'customize_allowed_urls', 'qtranxf_customize_allowed_urls' );
 
 /** @since 3.4 */
 function qtranxf_settings_page() {
-	require_once( QTRANSLATE_DIR . '/admin/qtx_configuration.php' );
-	qtranxf_conf();
+	require_once( QTRANSLATE_DIR . '/admin/qtx_admin_settings.php' );
+	$admin_settings = new QTX_Admin_Settings();
+	$admin_settings->display();
 }
 
 /**
@@ -680,7 +683,6 @@ function qtranxf_translate_menu( &$menu ) {
  */
 function qtranxf_admin_menu() {
 	global $menu, $submenu;
-	//qtranxf_dbg_log('7.qtranxf_admin_menu:');
 	if ( ! empty( $menu ) ) {
 		qtranxf_translate_menu( $menu );
 	}
@@ -689,11 +691,8 @@ function qtranxf_admin_menu() {
 			qtranxf_translate_menu( $submenu[ $k ] );
 		}
 	}
-	//qtranxf_dbg_log('"admin_menu": qtranxf_admin_menu: REQUEST_TIME_FLOAT: ', $_SERVER['REQUEST_TIME_FLOAT']);
-	// Configuration Page
-	add_options_page( __( 'Language Management', 'qtranslate' ), __( 'Languages', 'qtranslate' ), 'manage_options', 'qtranslate-xt', 'qtranxf_settings_page' ); // returns 'settings_page_qtranslate-x'
-	//qtranxf_dbg_log('qtranxf_admin_menu: $menu: ', $menu);
-	//qtranxf_dbg_log('qtranxf_admin_menu: $submenu: ', $submenu);
+
+	add_options_page( __( 'Language Management', 'qtranslate' ), __( 'Languages', 'qtranslate' ), 'manage_options', 'qtranslate-xt', 'qtranxf_settings_page' );
 }
 
 /* Add a metabox in admin menu page */
@@ -808,9 +807,9 @@ function qtranxf_links( $links, $file, $plugin_data, $context ) {
 function qtranxf_admin_notices_config() {
 	global $q_config;
 	if ( empty( $q_config['url_info']['errors'] ) &&
-         empty( $q_config['url_info']['warnings'] ) &&
-         empty( $q_config['url_info']['messages'] ) &&
-         empty( $q_config['lic']['wrn'] ) ) {
+	     empty( $q_config['url_info']['warnings'] ) &&
+	     empty( $q_config['url_info']['messages'] ) &&
+	     empty( $q_config['lic']['wrn'] ) ) {
 		return;
 	}
 
@@ -914,6 +913,24 @@ function qtranxf_add_admin_filters() {
 		add_filter( 'home_url', 'qtranxf_admin_home_url', 5, 4 );
 	}
 }
+
+function qtranxf_admin_debug_info() {
+	$info = array();
+	if ( current_user_can( 'administrator' ) ) {
+		global $q_config, $wp_version;
+
+		$info['configuration'] = $q_config;
+		$info['versions']      = array(
+			'PHP_VERSION' => PHP_VERSION,
+			'WP_VERSION'  => $wp_version,
+			'QTX_VERSION' => QTX_VERSION
+		);
+	}
+	echo json_encode( $info, JSON_UNESCAPED_SLASHES );
+	wp_die();
+}
+
+add_action( 'wp_ajax_admin_debug_info', 'qtranxf_admin_debug_info' );
 
 add_action( 'admin_head-nav-menus.php', 'qtranxf_add_nav_menu_metabox' );
 add_action( 'admin_menu', 'qtranxf_admin_menu', 999 );
