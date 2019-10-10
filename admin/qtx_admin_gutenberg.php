@@ -151,6 +151,23 @@ function qtranxf_enqueue_block_editor_assets()
 
 add_action('enqueue_block_editor_assets', 'qtranxf_enqueue_block_editor_assets');
 
+function qtranxf_admin_loadConfigGutenberg() {
+	global $wp_version;
+	require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+	if ( version_compare( $wp_version, '5.0' ) >= 0 &&
+	     ! ( class_exists( 'Classic_Editor' ) ||
+	         is_plugin_active( 'disable-gutenberg/disable-gutenberg.php' ) ||
+	         is_plugin_active( 'no-gutenberg/no-gutenberg.php' ) ) ) {
+		global $q_config;
+
+		if ($q_config['editor_mode'] == QTX_EDITOR_MODE_LSB) {
+			$q_config['editor_mode'] = QTX_EDITOR_MODE_SINGLE;
+		}
+	}
+}
+
+add_action('qtranslate_admin_loadConfig', 'qtranxf_admin_loadConfigGutenberg');
+
 //function qtranxf_enqueue_editor() {
 //}
 //add_action( 'wp_enqueue_editor', 'qtranxf_enqueue_editor' );
