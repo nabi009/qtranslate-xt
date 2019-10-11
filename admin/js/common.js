@@ -799,10 +799,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				var className = qTranslateConfig.custom_field_classes[i];
 				qtx.addContentHooksByClass(className);
 			}
-			/* gutenberg
 			if (qTranslateConfig.LSB)
 				setTinyMceInit();
-			*/
 		};
 
 		/**
@@ -1009,7 +1007,7 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 					}
 				}
 			};
-			// gutenberg setTinyMceInit();
+			setTinyMceInit();
 
 			/** Adds more TinyMCE editors, which may have been initialized dynamically. */
 			loadTinyMceHooks = function () {
@@ -1163,7 +1161,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 
 		addMultilingualHooks();
 
-		/* gutenberg
 		if (!displayHookNodes.length && !displayHookAttrs.length) {
 			var ok = false;
 			for (var key in contentHooks) {
@@ -1174,7 +1171,6 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 				return;
 			}
 		}
-		*/
 
 		this.onLoadLanguage = function (lang, langFrom) {
 			var onTabSwitchFunctionsLoad = qTranslateConfig.onTabSwitchFunctionsLoad;
@@ -1360,8 +1356,8 @@ function qtranxj_ce(tagName, props, pNode, isFirst) {
 		};
 
 		if (qTranslateConfig.LSB) {
-			//additional initialization
-			// gutenberg this.addContentHooksTinyMCE();
+			// additional initialization
+			this.addContentHooksTinyMCE();
 			setupMetaBoxLSB();
 
 			// create sets of LSB
