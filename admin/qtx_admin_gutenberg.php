@@ -33,11 +33,9 @@ function qtranxf_rest_prepare($response, $post, $request)
     }
 
     assert(!$q_config['url_info']['doing_front_end']);
-    // TODO allow user to select editor lang with buttons
-    $editor_lang = isset($_GET['qtx_lang']) ? $_GET['qtx_lang'] : null;
-    if (!isset($editor_lang) || !in_array($editor_lang, $q_config['enabled_languages'])) {
-        $editor_lang = $q_config['url_info']['lang_admin'];
-    }
+
+	// TODO allow user to select editor lang with buttons
+	$editor_lang = $q_config['url_info']['language'];
 
     $response_data = $response->get_data();
     if (isset($response_data['content']) && is_array($response_data['content']) && isset($response_data['content']['raw'])) {
@@ -77,19 +75,25 @@ function qtranxf_rest_request_before_callbacks($response, $handler, $request)
 
             $original_value = $post['post_' . $field];
             $blocks = qtranxf_get_language_blocks($original_value);
-            if (count($blocks) <= 1) {
-                continue;
+            if (count($blocks) > 1) {
+	            $split = qtranxf_split_languages( $blocks );
+	            /*
+	            foreach ( $content as $language => $lang_text ) {
+	                $lang_text = trim( $lang_text );
+	                if( ! empty( $lang_text ) ) $result[$language] = $language;
+	            }*/
+	            $split[ $editor_lang ] = $new_value;
+            }
+            else {
+	            global $q_config;
+	            $split = array();
+	            foreach ($q_config['enabled_languages'] as $lang) {
+					$split[$lang] = $original_value;
+	            }
+	            $split[$editor_lang] = $new_value;
             }
 
-            $split = qtranxf_split_languages($blocks);
-            /*
-            foreach ( $content as $language => $lang_text ) {
-                $lang_text = trim( $lang_text );
-                if( ! empty( $lang_text ) ) $result[$language] = $language;
-            }*/
-
-            $split[$editor_lang] = $new_value;
-
+            // TODO handle custom separator
             //$sep = '[';
             //$new_data = qtranxf_collect_translations_deep( $split, $sep );
             //$new_data = qtranxf_join_texts( $split, $sep );
@@ -99,12 +103,6 @@ function qtranxf_rest_request_before_callbacks($response, $handler, $request)
             //$request_body[ $field ] =  $new_data;
         }
     }
-    //$response_data['title']['raw'] = qtranxf_use($editor_lang, $response_data['title']['raw']);
-    //$response_data['content']['raw'] = qtranxf_use($editor_lang, $response_data['content']['raw']);
-    //$response->set_data( $response_data );
-
-
-    //$request->set_body( json_encode($request_body) );
 
     return $response;
 }
