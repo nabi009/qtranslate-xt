@@ -29,6 +29,7 @@ class QTX_Admin_Gutenberg {
 
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor_assets)' ) );
 		add_action( 'qtranslate_admin_loadConfig', array( $this, 'load_configuration' ) );
+		add_action( 'admin_notices', array( $this, 'admin_notices_block_editor' ) );
 	}
 
 //	/**
@@ -44,24 +45,6 @@ class QTX_Admin_Gutenberg {
 //
 //		return $args;
 //	}
-
-	/**
-	 * @param WP_HTTP_Response|WP_REST_Response $response
-	 * @param string $editor_lang
-	 *
-	 * @return mixed
-	 */
-	private function select_raw_response_language($response, $editor_lang) {
-		$response_data = $response->get_data();
-		if ( isset( $response_data['content'] ) && is_array( $response_data['content'] ) && isset( $response_data['content']['raw'] ) ) {
-			$response_data['title']['raw']    = qtranxf_use( $editor_lang, $response_data['title']['raw'] );
-			$response_data['content']['raw']  = qtranxf_use( $editor_lang, $response_data['content']['raw'] );
-			$response_data['qtx_editor_lang'] = $editor_lang;
-			$response->set_data( $response_data );
-		}
-
-		return $response;
-	}
 
 	/**
 	 * @param WP_REST_Response $response
@@ -82,7 +65,7 @@ class QTX_Admin_Gutenberg {
 		// TODO allow user to select editor lang with buttons
 		$editor_lang = $q_config['url_info']['language'];
 
-		$response = $this->select_raw_response_language($response, $editor_lang);
+		$response = $this->select_raw_response_language( $response, $editor_lang );
 
 		return $response;
 	}
@@ -116,7 +99,7 @@ class QTX_Admin_Gutenberg {
 				$original_value = $post[ 'post_' . $field ];
 				$blocks         = qtranxf_get_language_blocks( $original_value );
 				if ( count( $blocks ) > 1 ) {
-					$split = qtranxf_split_languages( $blocks );
+					$split                 = qtranxf_split_languages( $blocks );
 					$split[ $editor_lang ] = $new_value;
 				} else {
 					global $q_config;
@@ -158,7 +141,7 @@ class QTX_Admin_Gutenberg {
 			return $response;
 		}
 
-		$response = $this->select_raw_response_language($response, $editor_lang);
+		$response = $this->select_raw_response_language( $response, $editor_lang );
 
 		return $response;
 	}
@@ -182,6 +165,33 @@ class QTX_Admin_Gutenberg {
 		if ( $q_config['editor_mode'] == QTX_EDITOR_MODE_LSB ) {
 			$q_config['editor_mode'] = QTX_EDITOR_MODE_SINGLE;
 		}
+	}
+
+	public function admin_notices_block_editor() {
+		$link = "https://wordpress.org/plugins/classic-editor/";
+		?>
+        <div class="notice notice-warning">
+            <p><?php printf( __( 'The block editor (Gutenberg) is only partially supported in %s, yet experimental. Use at your own discretion! Alternatively, install and activate the <a href="%s"> Classic Editor</a> plugin.', 'qtranslate' ), 'qTranslate&#8209;XT', $link ); ?></p>
+        </div>
+		<?php
+	}
+
+	/**
+	 * @param WP_HTTP_Response|WP_REST_Response $response
+	 * @param string $editor_lang
+	 *
+	 * @return mixed
+	 */
+	private function select_raw_response_language( $response, $editor_lang ) {
+		$response_data = $response->get_data();
+		if ( isset( $response_data['content'] ) && is_array( $response_data['content'] ) && isset( $response_data['content']['raw'] ) ) {
+			$response_data['title']['raw']    = qtranxf_use( $editor_lang, $response_data['title']['raw'] );
+			$response_data['content']['raw']  = qtranxf_use( $editor_lang, $response_data['content']['raw'] );
+			$response_data['qtx_editor_lang'] = $editor_lang;
+			$response->set_data( $response_data );
+		}
+
+		return $response;
 	}
 }
 
