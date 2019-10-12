@@ -27,7 +27,7 @@ class QTX_Admin_Gutenberg {
 		add_filter( 'rest_request_before_callbacks', array( $this, 'rest_request_before_callbacks' ), 99, 3 );
 		add_filter( 'rest_request_after_callbacks', array( $this, 'rest_request_after_callbacks' ), 99, 3 );
 
-		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor_assets)' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor_assets' ) );
 		add_action( 'qtranslate_admin_loadConfig', array( $this, 'load_configuration' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notices_block_editor' ) );
 	}
