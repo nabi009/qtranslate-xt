@@ -67,8 +67,3 @@ if ( is_admin() ) {
 	require_once( QTRANSLATE_DIR . '/admin/qtx_activation_hook.php' );
 	qtranxf_register_activation_hooks();
 }
-
-// load additional functionalities
-if ( file_exists( QTRANSLATE_DIR . '/admin/qtx_admin_gutenberg.php' ) ) {
-	require_once( QTRANSLATE_DIR . '/admin/qtx_admin_gutenberg.php' );
-}

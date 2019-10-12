@@ -9,6 +9,16 @@ require_once( QTRANSLATE_DIR . '/admin/qtx_admin_class_translator.php' );
 require_once( QTRANSLATE_DIR . '/admin/qtx_user_options.php' );
 require_once( QTRANSLATE_DIR . '/admin/qtx_admin_taxonomy.php' );
 
+// TODO clarify loading sequence
+require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+global $wp_version;
+if ( version_compare( $wp_version, '5.0' ) >= 0 &&
+     ! ( class_exists( 'Classic_Editor' ) ||
+         is_plugin_active( 'disable-gutenberg/disable-gutenberg.php' ) ||
+         is_plugin_active( 'no-gutenberg/no-gutenberg.php' ) ) ) {
+	require_once( QTRANSLATE_DIR . '/admin/qtx_admin_gutenberg.php' );
+}
+
 /**
  * @see qtranxf_collect_translations
  */

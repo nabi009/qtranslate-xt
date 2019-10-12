@@ -177,17 +177,10 @@ class QTX_Admin_Gutenberg {
 	}
 
 	public function load_configuration() {
-		global $wp_version;
-		require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-		if ( version_compare( $wp_version, '5.0' ) >= 0 &&
-		     ! ( class_exists( 'Classic_Editor' ) ||
-		         is_plugin_active( 'disable-gutenberg/disable-gutenberg.php' ) ||
-		         is_plugin_active( 'no-gutenberg/no-gutenberg.php' ) ) ) {
-			global $q_config;
+		global $q_config;
 
-			if ( $q_config['editor_mode'] == QTX_EDITOR_MODE_LSB ) {
-				$q_config['editor_mode'] = QTX_EDITOR_MODE_SINGLE;
-			}
+		if ( $q_config['editor_mode'] == QTX_EDITOR_MODE_LSB ) {
+			$q_config['editor_mode'] = QTX_EDITOR_MODE_SINGLE;
 		}
 	}
 }
