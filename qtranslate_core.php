@@ -105,7 +105,8 @@ function qtranxf_init_language() {
 		}
 	} elseif ( isset( $url_info['doredirect'] ) ) {
 		$url_info['doredirect'] .= ' - cancelled by can_redirect';
-		//qtranxf_dbg_log('qtranxf_init_language: doredirect canceled: $url_info: ',$url_info);
+		// this should never happen! We are now in a bad state.
+		assert( false, $url_info['doredirect'] );
 	}
 
 	// TODO clarify fix url to prevent xss - how does this prevents xss?
@@ -174,21 +175,12 @@ function qtranxf_detect_language( &$url_info ) {
 
 	$lang = qtranxf_parse_language_info( $url_info );
 
-	// REST calls should be deterministic (stateless), no special language detection e.g. based on cookie
-	if ( qtranxf_is_rest_request_expected() ) {
-		if ( ! isset( $lang ) ) {
-			$lang = $q_config['default_language'];
-		}
-		$url_info['language'] = $lang;
-
-		return $lang;
-	}
-
+	// parse language from HTTP_REFERER
 	if ( ( ! $lang || ! isset( $url_info['doing_front_end'] ) )
 	     && ( defined( 'DOING_AJAX' ) || ! $url_info['cookie_enabled'] )
 	     && isset( $_SERVER['HTTP_REFERER'] )
 	) {
-		// get language from HTTP_REFERER, if needed, and detect front- vs back-end
+		// if needed, detect front- vs back-end
 		$http_referer             = $_SERVER['HTTP_REFERER'];
 		$url_info['http_referer'] = $http_referer;
 		if ( strpos( $http_referer, '/wp-admin' ) !== false ) {
@@ -202,6 +194,7 @@ function qtranxf_detect_language( &$url_info ) {
 				// determine $ref_info['path-base']
 				qtranxf_complete_url_info( $ref_info );
 				if ( isset( $ref_info['path-base'] ) ) {
+					// TODO remove internal_refer, not used
 					$url_info['internal_referer'] = true;
 					if ( ! $lang || ! ( isset( $url_info['doing_front_end'] ) || isset( $ref_info['doing_front_end'] ) ) ) {
 						$lang = qtranxf_parse_language_info( $ref_info, true );
@@ -234,16 +227,18 @@ function qtranxf_detect_language( &$url_info ) {
 		}
 	}
 
-	$url_info['language']   = $lang;
-	$url_info['set_cookie'] = ! defined( 'DOING_AJAX' );
+	$url_info['language'] = $lang;
+
+	// REST calls should be deterministic (stateless), no special language detection e.g. based on cookie
+	$url_info['set_cookie'] = ! defined( 'DOING_AJAX' ) && ! qtranxf_is_rest_request_expected();
 
 	/**
 	 * Hook for possible other methods
 	 * Set $url_info['language'] with the result
 	 */
 	$url_info = apply_filters( 'qtranslate_detect_language', $url_info );
-	$lang     = $url_info['language'];
-	//qtranxf_dbg_log('qtranxf_detect_language: detected: url_info: ',$url_info);
+
+	$lang = $url_info['language'];
 	if ( $url_info['set_cookie'] ) {
 		qtranxf_set_language_cookie( $lang );
 	}
@@ -252,12 +247,19 @@ function qtranxf_detect_language( &$url_info ) {
 }
 
 /**
+ * Parse language from the URL and/or query var, update url_info accordingly
+ *
  * Expects to be set before call:
  * - $url_info['host']
  * - $url_info['path']
  * - $url_info['query']
  * - $url_info['path-base']
  * - $url_info['path-base-length']
+ *
+ * @param array $url_info
+ * @param bool $link true when url_info concerns internal referrer (HTTP_REFERER)
+ *
+ * @return bool|string
  */
 function qtranxf_parse_language_info( &$url_info, $link = false ) {
 	global $q_config;
@@ -269,8 +271,8 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 
 	$doredirect = false;
 
+	// parse URL lang
 	if ( ! defined( 'WP_ADMIN' ) || $link ) {
-		$lang     = null;
 		$url_mode = $q_config['url_mode'];
 		switch ( $url_mode ) {
 			case QTX_URL_PATH:
@@ -280,9 +282,6 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 						$url_info['lang_url']        = $lang;
 						$url_info['wp-path']         = substr( $url_info['wp-path'], 3 );
 						$url_info['doing_front_end'] = true;
-						if ( WP_DEBUG ) {
-							$url_info['url_mode'] = 'pre-path';
-						}
 					}
 				}
 				break;
@@ -295,9 +294,6 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 							$url_info['lang_url']        = $lang;
 							$url_info['host']            = substr( $url_info['host'], 3 );
 							$url_info['doing_front_end'] = true;
-							if ( WP_DEBUG ) {
-								$url_info['url_mode'] = 'pre-domain';
-							}
 						}
 					}
 				}
@@ -305,7 +301,8 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 
 			case QTX_URL_DOMAINS:
 				if ( ! empty( $url_info['host'] ) ) {
-					foreach ( $q_config['enabled_languages'] as $lang ) {//todo should have hash host->lang
+					// TODO should 'enabled_languages' be defined as host->lang for domains?
+					foreach ( $q_config['enabled_languages'] as $lang ) {
 						if ( ! isset( $q_config['domains'][ $lang ] ) ) {
 							continue;
 						}
@@ -316,15 +313,14 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 						if ( $lang != $q_config['default_language'] || strpos( get_option( 'siteurl' ), $url_info['host'] ) === false ) {
 							$url_info['doing_front_end'] = true;
 						}
-						if ( WP_DEBUG ) {
-							$url_info['url_mode'] = 'per-domain';
-						}
 						break;
 					}
 				}
 				break;
 
 			default:
+				// TODO why don't we parse query lang here as 'lang_url'?!
+				assert( $url_mode == QTX_URL_QUERY );
 				/**
 				 * Hook for possible other methods
 				 * Set, if applicable:
@@ -332,41 +328,68 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 				 * $url_info['doing_front_end']
 				 * $url_info['path'] - convert to language neutral or default
 				 */
+				// TODO why do we have this spooky hook only for query mode?!
 				$url_info = apply_filters( 'qtranslate_parse_language_info_mode', $url_info, $q_config['url_mode'] );
 				break;
 		}
 	}
 
-	$lang = null;
+	// parse query lang (even for non query mode!)
+	$query_lang = false;
 	if ( ! $link ) {
 		if ( isset( $_GET['lang'] ) ) {
-			$lang = qtranxf_resolveLangCase( $_GET['lang'], $doredirect );
-			if ( $lang ) {
-				$url_info['lang_query_get'] = $lang;
+			$query_lang = qtranxf_resolveLangCase( $_GET['lang'], $doredirect );
+			if ( $query_lang ) {
+				$url_info['lang_query_get'] = $query_lang;  // only used in qtranxf_url_set_language
 			}
 		} else if ( isset( $_POST['lang'] ) ) {
-			$lang = qtranxf_resolveLangCase( $_POST['lang'], $doredirect );
+			$query_lang = qtranxf_resolveLangCase( $_POST['lang'], $doredirect );
 		}
-	} elseif ( ! empty( $url_info['query'] ) && preg_match( '/(^|&|&amp;|&#038;|\?)lang=([a-z]{2})/i', $url_info['query'], $match ) ) { //rx is changed in 3.4.6.5: https://github.com/qTranslate-Team/qtranslate-x/issues/288
-		$lang = qtranxf_resolveLangCase( $match[2], $doredirect );
+	} elseif ( ! empty( $url_info['query'] ) && preg_match( '/(^|&|&amp;|&#038;|\?)lang=([a-z]{2})/i', $url_info['query'], $match ) ) {
+		// checked for query mode, see https://github.com/qTranslate-Team/qtranslate-x/issues/288
+		$query_lang = qtranxf_resolveLangCase( $match[2], $doredirect );
 	}
 
-	if ( $lang ) {
-		$url_info['lang_query'] = $lang;
-		qtranxf_del_query_arg( $url_info['query'], 'lang' );
-		if ( $q_config['url_mode'] != QTX_URL_QUERY ) {
-			$doredirect = true;
+	$parsed_lang = false;
+
+	// don't allow query lang switch with REST request
+	if ( qtranxf_is_rest_request_expected() ) {
+		if ( isset( $url_info['lang_url'] ) ) {
+			$parsed_lang = $url_info['lang_url'];
+		} elseif ( $q_config['url_mode'] == QTX_URL_QUERY && $query_lang ) {
+			$parsed_lang = $query_lang;
 		}
-		//}
-	} else if ( isset( $url_info['lang_url'] ) ) {
-		$lang = $url_info['lang_url'];
-		if ( $q_config['hide_default_language'] && $lang == $q_config['default_language'] ) {
-			$doredirect = true;
+		// 'hide_default_language' should also be set in query mode
+		if ( ! isset( $parsed_lang ) && $q_config['hide_default_language'] ) {
+			$parsed_lang = $q_config['default_language'];
+		}
+		// TODO validate URL-case redirections
+		if ( $doredirect ) {
+			assert( isset( $parsed_lang ) );
+			$doredirect = false;
+		}
+	} else {
+		if ( $query_lang ) {
+			// query overrides URL lang for a language switch
+			$parsed_lang = $query_lang;
+			// TODO can we avoid removing query args?
+			qtranxf_del_query_arg( $url_info['query'], 'lang' );
+			if ( $q_config['url_mode'] != QTX_URL_QUERY ) {
+				// force lang switch from query var
+				$doredirect = true;
+			}
+		} elseif ( isset( $url_info['lang_url'] ) ) {
+			$parsed_lang = $url_info['lang_url'];
+			assert( $parsed_lang !== false );
+			if ( $q_config['hide_default_language'] && $parsed_lang == $q_config['default_language'] ) {
+				// default lang should not be part of the URL when hidden
+				$doredirect = true;
+			}
 		}
 	}
 
-	if ( $lang ) {
-		$url_info['language'] = $lang;
+	if ( $parsed_lang ) {
+		$url_info['language'] = $parsed_lang;
 	}
 
 	if ( $doredirect ) {
@@ -385,13 +408,15 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 	 * Hook for possible other methods
 	 * Set $url_info['language'] with the result
 	 */
-	$url_info = apply_filters( 'qtranslate_parse_language_info', $url_info, $link ); // slug?
+	$url_info = apply_filters( 'qtranslate_parse_language_info', $url_info, $link );
 
 	if ( isset( $url_info['language'] ) ) {
-		$lang = $url_info['language'];
+		$parsed_lang = $url_info['language'];
 	}
 
-	return $lang;
+	assert( isset( $parsed_lang ) );
+
+	return $parsed_lang;
 }
 
 function qtranxf_detect_language_admin( &$url_info ) {
@@ -442,6 +467,7 @@ function qtranxf_setcookie_language( $lang, $cookie_name, $cookie_path ) {
 function qtranxf_set_language_cookie( $lang ) {
 	global $q_config;
 
+	assert( ! qtranxf_is_rest_request_expected() );
 	if ( defined( 'WP_ADMIN' ) ) {
 		qtranxf_setcookie_language( $lang, QTX_COOKIE_NAME_ADMIN, ADMIN_COOKIE_PATH );
 	} elseif ( ! $q_config['disable_client_cookies'] ) {
@@ -1093,12 +1119,14 @@ function qtranxf_get_url_for_language( $url, $lang, $showLanguage = true ) {
 /**
  * Encode URL $url with language $lang.
  *
- * @param (string) $url URL to be converted.
- * @param (string) $lang two-letter language code of the language to convert $url to.
- * @param (bool) $forceadmin $url is not converted on admin side, unless $forceadmin is set to true.
- * @param (bool) $showDefaultLanguage When set to true, $url is always encoded with a language, otherwise it senses option "Hide URL language information for default language" to keep $url consistent with the currently active language.
+ * @param string $url URL to be converted.
+ * @param string $lang two-letter language code of the language to convert $url to.
+ * @param bool $forceadmin $url is not converted on admin side, unless $forceadmin is set to true.
+ * @param bool $showDefaultLanguage When set to true, $url is always encoded with a language, otherwise it senses option "Hide URL language information for default language" to keep $url consistent with the currently active language.
  *
  * If you need a URL to switch the language, set $showDefaultLanguage=true, if you need a URL to keep the current language, set it to false.
+ *
+ * @return string
  */
 function qtranxf_convertURL( $url = '', $lang = '', $forceadmin = false, $showDefaultLanguage = false ) {
 	global $q_config;
