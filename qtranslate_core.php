@@ -31,13 +31,13 @@ function qtranxf_init_language() {
     if ( WP_DEBUG ) {
         $url_info['pagenow']        = $pagenow;
         $url_info['REQUEST_METHOD'] = isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : '';
-        if ( defined( 'WP_ADMIN' ) && WP_ADMIN ) {
+        if ( is_admin() ) {
             $url_info['WP_ADMIN'] = true;
         }
-        if ( defined( 'DOING_AJAX' ) ) {
+        if ( wp_doing_ajax() ) {
             $url_info['DOING_AJAX_POST'] = $_POST;
         }
-        if ( defined( 'DOING_CRON' ) ) {
+        if ( wp_doing_cron() ) {
             $url_info['DOING_CRON_POST'] = $_POST;
         }
     }
@@ -152,12 +152,10 @@ function qtranxf_init_language() {
     //qtranxf_dbg_log('qtranxf_init_language: done: url_info: ',$url_info);
 }
 
-add_action( 'plugins_loaded', 'qtranxf_init_language', 2 ); // user is not authenticated yet
-
 function qtranxf_detect_language( &$url_info ) {
     global $q_config;
 
-    if ( defined( 'WP_ADMIN' ) || defined( 'WP_CLI' ) ) {
+    if ( is_admin() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
         $siteinfo                     = qtranxf_get_site_info();
         $url_info['path-base']        = $siteinfo['path'];
         $url_info['path-base-length'] = $siteinfo['path-length'];
@@ -178,7 +176,7 @@ function qtranxf_detect_language( &$url_info ) {
     // TODO check if we shouldn't generalize the referrer parsing to all cases, do we need all these limitations?
     $parse_referrer = qtranxf_is_rest_request_expected() ||
                       ( ( ! $lang || ! isset( $url_info['doing_front_end'] ) ) &&
-                        ( defined( 'DOING_AJAX' ) || ! $url_info['cookie_enabled'] ) );
+                        ( wp_doing_ajax() || ! $url_info['cookie_enabled'] ) );
 
     // parse language and front info from HTTP_REFERER
     if ( isset( $_SERVER['HTTP_REFERER'] ) && $parse_referrer ) {
@@ -229,7 +227,7 @@ function qtranxf_detect_language( &$url_info ) {
     }
 
     if ( ! isset( $url_info['doing_front_end'] ) ) {
-        $url_info['doing_front_end'] = ! defined( 'WP_ADMIN' );
+        $url_info['doing_front_end'] = ! is_admin();
     }
 
     if ( ! $lang ) {
@@ -239,7 +237,7 @@ function qtranxf_detect_language( &$url_info ) {
     $url_info['language'] = $lang;
 
     // REST calls should be deterministic (stateless), no special language detection e.g. based on cookie
-    $url_info['set_cookie'] = ! defined( 'DOING_AJAX' ) && ! qtranxf_is_rest_request_expected();
+    $url_info['set_cookie'] = ! wp_doing_ajax() && ! qtranxf_is_rest_request_expected();
 
     /**
      * Hook for possible other methods
@@ -281,7 +279,7 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
     $doredirect = false;
 
     // parse URL lang
-    if ( ! defined( 'WP_ADMIN' ) || $link ) {
+    if ( ! is_admin() || $link ) {
         $url_mode = $q_config['url_mode'];
         switch ( $url_mode ) {
             case QTX_URL_PATH:
@@ -479,7 +477,7 @@ function qtranxf_set_language_cookie( $lang ) {
     global $q_config;
 
     assert( ! qtranxf_is_rest_request_expected() );
-    if ( defined( 'WP_ADMIN' ) ) {
+    if ( is_admin() ) {
         qtranxf_setcookie_language( $lang, QTX_COOKIE_NAME_ADMIN, ADMIN_COOKIE_PATH );
     } elseif ( ! $q_config['disable_client_cookies'] ) {
         qtranxf_setcookie_language( $lang, QTX_COOKIE_NAME_FRONT, COOKIEPATH );
@@ -594,8 +592,6 @@ function qtranxf_load_plugin_textdomain() {
 function qtranxf_init() {
     //qtranxf_dbg_log('3.qtranxf_init:');
 }
-
-add_action( 'init', 'qtranxf_init', 2 ); // user is authenticated
 
 function qtranxf_front_header_css_default() {
     global $q_config;
@@ -1642,4 +1638,7 @@ function qtranxf_rest_api_register_rewrites() {
     add_rewrite_rule( '^' . $default_lang . '/' . $wp_rewrite->index . '/' . rest_get_url_prefix() . '/(.*)?', 'index.php?rest_route=/$matches[1]', 'top' );
 }
 
+// core setup
+add_action( 'plugins_loaded', 'qtranxf_init_language', 2 ); // user is not authenticated yet
+add_action( 'init', 'qtranxf_init', 2 ); // user is authenticated
 add_action( 'init', 'qtranxf_rest_api_register_rewrites', 11 );
