@@ -175,20 +175,33 @@ function qtranxf_detect_language( &$url_info ) {
 
 	$lang = qtranxf_parse_language_info( $url_info );
 
-	// parse language from HTTP_REFERER
-	if ( ( ! $lang || ! isset( $url_info['doing_front_end'] ) )
-	     && ( defined( 'DOING_AJAX' ) || ! $url_info['cookie_enabled'] )
-	     && isset( $_SERVER['HTTP_REFERER'] )
-	) {
-		// if needed, detect front- vs back-end
+	// TODO check if we shouldn't generalize the referrer parsing to all cases, do we need all these limitations?
+	$parse_referrer = qtranxf_is_rest_request_expected() ||
+	                  ( ( ! $lang || ! isset( $url_info['doing_front_end'] ) ) &&
+	                    ( defined( 'DOING_AJAX' ) || ! $url_info['cookie_enabled'] ) );
+
+	// parse language and front info from HTTP_REFERER
+	if ( isset( $_SERVER['HTTP_REFERER'] ) && $parse_referrer ) {
 		$http_referer             = $_SERVER['HTTP_REFERER'];
 		$url_info['http_referer'] = $http_referer;
+
+		// if needed, detect front- vs back-end
+		$parse_referrer_language = true;
 		if ( strpos( $http_referer, '/wp-admin' ) !== false ) {
 			$url_info['referer_admin'] = true;
 			if ( ! isset( $url_info['doing_front_end'] ) ) {
 				$url_info['doing_front_end'] = false;
 			}
-		} else {
+			if ( qtranxf_is_rest_request_expected() ) {
+				// TODO see if we can detect front better for REST to avoid overriding here
+				$url_info['doing_front_end'] = false;
+			} else {
+				// TODO check if language shouldn't be parsed for non-admin referrer as well, potentially a legacy bug!
+				$parse_referrer_language = false;
+			}
+		}
+
+		if ( $parse_referrer_language ) {
 			$ref_info = qtranxf_parseURL( $http_referer );
 			if ( ! qtranxf_external_host( $ref_info['host'] ) ) {
 				// determine $ref_info['path-base']
@@ -352,7 +365,8 @@ function qtranxf_parse_language_info( &$url_info, $link = false ) {
 	if ( qtranxf_is_rest_request_expected() ) {
 		if ( isset( $url_info['lang_url'] ) ) {
 			$parsed_lang = $url_info['lang_url'];
-		} elseif ( $q_config['url_mode'] == QTX_URL_QUERY && $query_lang ) {
+		} elseif ( $query_lang && ( $q_config['url_mode'] == QTX_URL_QUERY || $link ) ) {
+			// consider query lang for query mode or fallback for referrer links (from REST)
 			$parsed_lang = $query_lang;
 		}
 		// 'hide_default_language' should also be set in query mode
