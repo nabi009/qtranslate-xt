@@ -155,8 +155,7 @@ class QTX_Admin_Gutenberg {
     }
 
     public function enqueue_block_editor_assets() {
-        $script_file = 'js/lib/editor-gutenberg';
-        $script_file .= defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '.js' : '.min.js';
+        $script_file = 'js/lib/editor-gutenberg.js';
         wp_register_script(
             'qtx-gutenberg',
             plugins_url( $script_file, __FILE__ ),
