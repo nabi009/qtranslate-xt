@@ -105,7 +105,15 @@ class QTX_Admin_Gutenberg {
                     global $q_config;
                     $split = array();
                     foreach ( $q_config['enabled_languages'] as $lang ) {
-                        $split[ $lang ] = $original_value;
+                        if ( $lang === $editor_lang ) {
+                            continue;
+                        }
+                        if ( $field === 'title' && $post['post_status'] === 'auto-draft' ) {
+                            // remove default title for auto-draft for other languages
+                            $split[ $lang ] = '';
+                        } else {
+                            $split[ $lang ] = $original_value;
+                        }
                     }
                     $split[ $editor_lang ] = $new_value;
                 }
