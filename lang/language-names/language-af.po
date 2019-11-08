@@ -304,7 +304,7 @@ msgid "os"
 msgstr "Osseties"
 
 msgid "ps"
-msgstr "Pasjto"
+msgstr "Pashto"
 
 msgid "fa_IR"
 msgstr "Persies"
